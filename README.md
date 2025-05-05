@@ -1,51 +1,33 @@
-MyMayaPlugin
-MyMayaPlugin is a C++ plugin for Autodesk Maya that introduces custom commands and functionalities to enhance your 3D modeling and animation workflow.
+# MyMayaPlugin
 
-📦 Features
-Custom Maya commands implemented in C++.
+MyMayaPlugin is a C++ plugin for Autodesk Maya. It adds custom functionality to Maya using the Maya API.
 
-Seamless integration with Maya's Plugin Manager.
+## ✅ Features
 
-Post-build automation for plugin management.
-Google Csoportok
-+5
-Vimeo
-+5
-GitHub
-+5
+- Written in modern C++
+- Exposes custom commands to Maya
+- Can be loaded and unloaded from Python or MEL
 
-🛠️ Requirements
-Autodesk Maya 2024
+---
 
-Visual Studio 2022
+## 🧰 Requirements
 
-Maya Developer Kit corresponding to your Maya version
+- Autodesk Maya 
+- Visual Studio 2019 or newer
+- Maya Developer Kit (from Maya installation)
+- Set environment variables for include and lib directories
 
-CMake (optional, if using CMake for build configuration)
-help.autodesk.com
-+2
-tech-artists.org
-+2
-tech-artists.org
-+2
-GitHub
-+1
-help.autodesk.com
-+1
+---
 
-🚀 Installation
-1. Clone the Repository
-bash
-Másolás
-Szerkesztés
-git clone https://github.com/yourusername/MyMayaPlugin.git
-2. Set Up the Build Environment
-Ensure that the Maya Developer Kit is installed and its include and lib directories are accessible.
+## 🔧 Building the Plugin
 
-Configure your Visual Studio project to include the Maya SDK paths.
-GitHub
-+2
-help.autodesk.com
-+2
-tech-artists.org
-+2
+1. Clone or copy this project.
+2. Open the `.sln` file in Visual Studio.
+3. Set up the include/lib directories:
+Include: C:\Program Files\Autodesk\Maya2024\include
+Library: C:\Program Files\Autodesk\Maya2024\lib
+4. Build the project in `Release` or `Debug` mode.
+
+If successful, the `.mll` file will be created in:
+<ProjectDir>\x64\Release\MyMayaPlugin.mll
+
