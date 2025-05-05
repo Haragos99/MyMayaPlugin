@@ -143,7 +143,7 @@
 xcopy /Y /I "$(TargetPath)" "C:\Program Files\Autodesk\Maya2024\plug-ins\"</Command>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>"C:\Program Files\Autodesk\Maya2024\bin\mayapy.exe" "$(ProjectDir)Unload.py"</Command>
+      <Command>"C:\Program Files\Autodesk\Maya2024\bin\mayapy.exe" "$(ProjectDir)\scripts\Unload.py"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
