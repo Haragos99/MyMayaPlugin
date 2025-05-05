@@ -11,3 +11,8 @@
 #include <maya/MIntArray.h>
 #include <maya/MStatus.h>
 #include <maya/MObject.h>
+#include <maya/MSelectionList.h>
+#include <maya/MDagPath.h>
+#include <maya/MItMeshVertex.h>
+#include <maya/MPoint.h>
+#include <maya/MItSelectionList.h>

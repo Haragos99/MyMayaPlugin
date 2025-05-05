@@ -6,10 +6,9 @@ class MyPluginCmd : public MPxCommand {
 
 private:
     MStatus createCube();
+    MStatus smoothMesh(MObject& meshObj, int iterations);
+
 public:
-    MStatus doIt(const MArgList&) override {
-        MGlobal::displayInfo("A fCube the mesh created successfully.");
-        return MS::kSuccess;
-    }
+    MStatus doIt(const MArgList&) override;
     static void* creator() { return new MyPluginCmd; }
 };

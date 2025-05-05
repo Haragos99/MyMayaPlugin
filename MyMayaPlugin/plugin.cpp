@@ -1,6 +1,93 @@
 #include "pch.h"
 #include "plugin.h"
 
+
+
+MStatus MyPluginCmd::smoothMesh(MObject& meshObj, int iterations)
+{
+    MStatus status;
+    double smoothingFactor = 0.5;
+    MFnMesh meshFn(meshObj, &status);
+    if (!status) 
+    {
+        return status;
+    }
+
+    unsigned int vertexCount = meshFn.numVertices();
+    MPointArray currentPoints;
+    meshFn.getPoints(currentPoints, MSpace::kObject);
+
+    for (int i = 0; i < iterations; ++i)
+    {
+        MPointArray updatedPoints = currentPoints;// create copy of the points
+
+        MItMeshVertex itVert(meshObj, &status);
+        if (!status) 
+        { 
+            return status; 
+        }
+
+        while (!itVert.isDone())
+        {
+            int idx = itVert.index();
+            MIntArray connectedVerticesIndices; 
+            itVert.getConnectedVertices(connectedVerticesIndices); // get indeces of the verteces
+            bool hasNeighbors = connectedVerticesIndices.length() > 0;
+            if (hasNeighbors)
+            {
+                MPoint avgPos(0.0, 0.0, 0.0);
+                for (int j = 0; j < connectedVerticesIndices.length(); ++j)
+                {
+                    avgPos += currentPoints[connectedVerticesIndices[j]];
+                }
+                avgPos = avgPos /connectedVerticesIndices.length();
+
+                MVector diff = avgPos - currentPoints[idx];
+                updatedPoints[idx] += diff * smoothingFactor;
+            }
+            
+            itVert.next();
+        }
+        currentPoints = updatedPoints;  
+    }
+    // Apply new positions
+    status = meshFn.setPoints(currentPoints, MSpace::kObject);
+    return status;
+}
+
+
+
+
+
+MStatus MyPluginCmd::doIt(const MArgList&)
+{
+    MSelectionList selection;
+    MGlobal::getActiveSelectionList(selection);
+
+    if (selection.length() == 0)
+    {
+        MGlobal::displayError("No object selected.");
+        return MS::kFailure;
+    }
+
+    MItSelectionList iter(selection, MFn::kMesh);
+    MObject meshObj;
+    iter.getDependNode(meshObj);
+
+    if (meshObj.isNull())
+    {
+        MGlobal::displayError("No mesh found in selection.");
+        return MS::kFailure;
+    }
+
+    smoothMesh(meshObj, 10);
+
+    MGlobal::displayInfo("Mesh modified successfully.");
+    return MStatus::kSuccess;
+}
+
+
+
 MStatus MyPluginCmd::createCube()
 {
     // When you are using pre-compiled headers, this source file is necessary for compilation to succeed.
