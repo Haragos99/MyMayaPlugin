@@ -12,7 +12,6 @@ MStatus MyPluginCmd::smoothMesh(MObject& meshObj, int iterations)
     {
         return status;
     }
-
     unsigned int vertexCount = meshFn.numVertices();
     MPointArray currentPoints;
     meshFn.getPoints(currentPoints, MSpace::kObject);

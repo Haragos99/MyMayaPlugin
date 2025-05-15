@@ -16,3 +16,4 @@
 #include <maya/MItMeshVertex.h>
 #include <maya/MPoint.h>
 #include <maya/MItSelectionList.h>
+#include <Eigen/Core>
