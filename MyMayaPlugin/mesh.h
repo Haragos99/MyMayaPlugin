@@ -26,7 +26,7 @@ public:
 
 
 private:
-    MObject m_mesh; // Maya 
+    MObject m_mesh;
     MFnMesh m_fnMesh;
     MPointArray m_vertices;
     MFloatVectorArray m_normals;
