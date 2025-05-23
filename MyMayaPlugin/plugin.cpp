@@ -69,6 +69,11 @@ MStatus MyPluginCmd::doIt(const MArgList&)
         return MS::kFailure;
     }
 
+
+
+    MDagPath dagPath;
+    selection.getDagPath(0, dagPath);  // Get first selected item
+
     MItSelectionList iter(selection, MFn::kMesh);
     MObject meshObj;
     iter.getDependNode(meshObj);
@@ -79,7 +84,11 @@ MStatus MyPluginCmd::doIt(const MArgList&)
         return MS::kFailure;
     }
 
-    smoothMesh(meshObj, 10);
+    //smoothMesh(meshObj, 10);
+
+    deltamush = std::make_unique<DeltaMush>(dagPath);
+    deltamush->CalculateDelta();
+
 
     MGlobal::displayInfo("Mesh modified successfully.");
     return MStatus::kSuccess;

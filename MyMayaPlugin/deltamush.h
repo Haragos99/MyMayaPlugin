@@ -4,12 +4,13 @@
 
 
 class DeltaMush {
-	DeltaMush(std::shared_ptr<MeshHandler> mesh);
-	std::shared_ptr<MeshHandler> smoothMesh(MeshHandler mesh,int iterations); 
+public:
+	DeltaMush(MDagPath& dagPath);
+	MeshHandler smoothMesh(MeshHandler mesh,int iterations); 
 	void CalculateDelta();
 
 private:
-	std::shared_ptr<MeshHandler> m_mesh;
+	MeshHandler m_mesh;
 
 
 };

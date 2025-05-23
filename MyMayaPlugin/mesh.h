@@ -1,10 +1,19 @@
 #pragma once
 #include "pch.h"
 
+
+
+struct MeshData {
+
+};
+
+
 class MeshHandler {
 public:
     
-    MeshHandler(const MObject& mesh);
+    MeshHandler(const MDagPath& dagpath);
+    MeshHandler() = default;
+    MeshHandler(const MeshHandler& other);
 
     // Accessors
     const MPointArray& getVertices() const;
@@ -15,18 +24,21 @@ public:
     // Modifiers
     void setVertices(const MPointArray& points);
     void setNormals(const MFloatVectorArray& normals);
+    
+    void recalculateNormals();
 
+    MeshHandler& operator=(const MeshHandler& other);
     // Iterators
-    std::shared_ptr<MItMeshVertex> getVertexIterator(MStatus* status = nullptr) const;
-    std::shared_ptr<MItMeshPolygon> getPolygonIterator(MStatus* status = nullptr) const;
-    std::shared_ptr<MItMeshEdge> getEdgeIterator(MStatus* status = nullptr) const;
+    std::shared_ptr<MItMeshVertex> getVertexIterator(MStatus* status ) const;
+    std::shared_ptr<MItMeshPolygon> getPolygonIterator(MStatus* status) const;
+    std::shared_ptr<MItMeshEdge> getEdgeIterator(MStatus* status) const;
 
     // Utility Methods
     void updateMesh(); // Apply changes to the mesh
-
-
+    ~MeshHandler(){}
+    
 private:
-    MObject m_mesh;
+    MDagPath  m_dagPath;
     MFnMesh m_fnMesh;
     MPointArray m_vertices;
     MFloatVectorArray m_normals;

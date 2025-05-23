@@ -167,6 +167,7 @@ xcopy /Y /I "$(TargetPath)" "C:\Program Files\Autodesk\Maya2024\plug-ins\"</Comm
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="framework.h" />
+    <ClInclude Include="deltamush.h" />
     <ClInclude Include="mesh.h" />
     <ClInclude Include="plugin.h" />
     <ClInclude Include="pch.h" />
@@ -181,6 +182,7 @@ xcopy /Y /I "$(TargetPath)" "C:\Program Files\Autodesk\Maya2024\plug-ins\"</Comm
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="plugin.cpp" />
+    <ClCompile Include="deltamush.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

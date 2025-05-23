@@ -2,6 +2,11 @@
 #include "pch.h"
 #include "plugin.h"
 
+static MCallbackIdArray g_callbackIds;
+
+
+
+
 MStatus initializePlugin(MObject obj) {
     MFnPlugin plugin(obj, "Haragos", "1.0", "Any");
     return plugin.registerCommand("helloMaya", MyPluginCmd::creator);
@@ -9,6 +14,10 @@ MStatus initializePlugin(MObject obj) {
 
 MStatus uninitializePlugin(MObject obj) {
     MFnPlugin plugin(obj);
+
+    MMessage::removeCallbacks(g_callbackIds);
+    g_callbackIds.clear();
+
     return plugin.deregisterCommand("helloMaya");
 }
 

@@ -3,6 +3,7 @@
 #define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
 // Windows Header Files
 #include <windows.h>
+#include <vector>
 #include <maya/MFnPlugin.h>
 #include <maya/MGlobal.h>
 #include <maya/MPxCommand.h>
@@ -14,6 +15,10 @@
 #include <maya/MSelectionList.h>
 #include <maya/MDagPath.h>
 #include <maya/MItMeshVertex.h>
+#include <maya/MItMeshPolygon.h>
+#include <maya/MItMeshEdge.h>
+#include <maya/MDagPath.h>
 #include <maya/MPoint.h>
 #include <maya/MItSelectionList.h>
+#include <maya/MCallbackIdArray.h>
 #include <Eigen/Core>
