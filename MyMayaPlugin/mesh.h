@@ -2,7 +2,7 @@
 #include "pch.h"
 
 
-
+using PolyData = std::pair<std::vector<int>, std::vector<MPoint>>;
 struct MeshData {
 
 };
@@ -33,11 +33,20 @@ public:
     std::shared_ptr<MItMeshPolygon> getPolygonIterator(MStatus* status) const;
     std::shared_ptr<MItMeshEdge> getEdgeIterator(MStatus* status) const;
 
+
+    void resetNormals();
+    void normalizeNormals();
+
     // Utility Methods
     void updateMesh(); // Apply changes to the mesh
     ~MeshHandler(){}
     
 private:
+    
+    PolyData getPolydata(size_t index, int count);
+    MVector computePolyNormal(std::vector<MPoint>& polyVerts, int count);
+    void calcVerticesNormal(std::vector<int>& polyIndices, MVector faceNormal, int count);
+
     MDagPath  m_dagPath;
     MFnMesh m_fnMesh;
     MPointArray m_vertices;

@@ -12,6 +12,12 @@
 
 #endif //PCH_H
 
+namespace Utilty
+{
+	static Eigen::Vector3f toEigenVec(const MVector& v);
+	static MVector cross(MPoint& p1, MPoint& p2);
+}
+
 
 
 
