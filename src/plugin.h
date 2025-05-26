@@ -1,5 +1,5 @@
 #pragma once
-#include "pch.h"
+#include "framework.h"
 #include "deltamush.h"
 
 class MyPluginCmd : public MPxCommand {

@@ -1,5 +1,5 @@
 #pragma once
-#include "pch.h"
+#include "framework.h"
 #include "mesh.h"
 
 
@@ -11,6 +11,7 @@ public:
 
 private:
 	MeshHandler m_mesh;
+	std::vector<MPoint> deltas;
 
 
 };

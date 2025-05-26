@@ -1,6 +1,6 @@
 // dllmain.cpp : Defines the entry point for the DLL application.
-#include "pch.h"
 #include "plugin.h"
+#include <maya/MFnPlugin.h>
 
 static MCallbackIdArray g_callbackIds;
 

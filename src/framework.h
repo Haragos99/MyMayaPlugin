@@ -4,12 +4,13 @@
 // Windows Header Files
 #include <windows.h>
 #include <vector>
-#include <maya/MFnPlugin.h>
+
 #include <maya/MGlobal.h>
 #include <maya/MPxCommand.h>
 #include <maya/MFnMesh.h>
 #include <maya/MPointArray.h>
 #include <maya/MIntArray.h>
+#include <maya/MMatrix.h>
 #include <maya/MStatus.h>
 #include <maya/MObject.h>
 #include <maya/MSelectionList.h>

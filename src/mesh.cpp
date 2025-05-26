@@ -1,4 +1,4 @@
-#include "pch.h"
+#include "framework.h"
 #include "mesh.h"
 
 
@@ -54,13 +54,27 @@ MVector MeshHandler::computePolyNormal(std::vector<MPoint>& polyVerts, int count
     for (int i = 0; i < count; ++i) {
         MPoint& curr = polyVerts[i];
         MPoint& next = polyVerts[(i + 1) % count];
-        faceNormal = Utilty::cross(curr, next);
+        faceNormal.x += (curr.y - next.y) * (curr.z + next.z);
+        faceNormal.y += (curr.z - next.z) * (curr.x + next.x);
+        faceNormal.z += (curr.x - next.x) * (curr.y + next.y);
     }
     faceNormal.normalize();
 
     return faceNormal;
 }
 
+
+MPoint MeshHandler::getNextPoint(int index)
+{
+    MStatus status;
+    MPoint p1;
+    status = m_fnMesh.getPoint(index, p1, MSpace::kWorld);
+    if (status != MS::kSuccess) 
+    {
+        MGlobal::displayError("Failed to get connected vertex position.");
+    }
+    return p1;
+}
 
 void MeshHandler::calcVerticesNormal(std::vector<int>& polyIndices, MVector faceNormal, int count)
 {
@@ -154,7 +168,7 @@ void MeshHandler::setNormals(const MFloatVectorArray& normals)
 
 void MeshHandler::updateMesh() {
     m_fnMesh.setPoints(m_vertices, MSpace::kObject);
-    m_fnMesh.setNormals(m_normals, MSpace::kObject);
+    //m_fnMesh.setNormals(m_normals, MSpace::kObject);
 }
 
 

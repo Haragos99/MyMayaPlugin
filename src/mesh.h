@@ -1,5 +1,5 @@
 #pragma once
-#include "pch.h"
+#include "framework.h"
 
 
 using PolyData = std::pair<std::vector<int>, std::vector<MPoint>>;
@@ -36,6 +36,8 @@ public:
 
     void resetNormals();
     void normalizeNormals();
+
+    MPoint getNextPoint(int index);
 
     // Utility Methods
     void updateMesh(); // Apply changes to the mesh
