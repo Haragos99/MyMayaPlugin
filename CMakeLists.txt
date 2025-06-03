@@ -5,8 +5,23 @@ project(MyMayaPlugin LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# 2. Maya SDK path (override with -DMAYA_SDK_ROOT=… when configuring if you like)
-set(MAYA_SDK_ROOT "C:/Program Files/Autodesk/Maya2024")
+# 2. Maya SDK path 
+if(NOT DEFINED MAYA_SDK_ROOT)
+    # Look for installed Maya versions in default location
+    file(GLOB MAYA_VERSIONS "C:/Program Files/Autodesk/Maya*")
+    
+    # Sort descending to get the latest version
+    list(SORT MAYA_VERSIONS DESCENDING)
+    if(MAYA_VERSIONS)
+        list(GET MAYA_VERSIONS 0 MAYA_LATEST_PATH)
+        set(MAYA_SDK_ROOT "${MAYA_LATEST_PATH}" CACHE PATH "Path to Maya SDK")
+    else()
+        message(FATAL_ERROR "No Maya installation found in 'C:/Program Files/Autodesk/'. Please set -DMAYA_SDK_ROOT=...")
+    endif()
+endif()
+
+message(STATUS "Using Maya SDK path: ${MAYA_SDK_ROOT}")
+
 include_directories("${MAYA_SDK_ROOT}/include")
 link_directories("${MAYA_SDK_ROOT}/lib")
 
