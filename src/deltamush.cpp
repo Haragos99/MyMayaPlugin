@@ -53,6 +53,7 @@ MeshHandler DeltaMush::smoothMesh(MeshHandler mesh,int iterations)
 
 void DeltaMush::CalculateDelta()
 {
+	deltas.clear();
 	auto smooth = smoothMesh(m_mesh,10);
 	MStatus status;
 	auto vertIter = smooth.getVertexIterator(&status);
@@ -86,7 +87,7 @@ void DeltaMush::CalculateDelta()
 
 		MVector edge = p1 - p;
 
-		// Compute tangent vector by removing the component along the normal
+		// Compute tangent vector 
 		MVector tangent = edge - (edge * normal) * normal;
 		tangent.normalize();
 
@@ -94,12 +95,12 @@ void DeltaMush::CalculateDelta()
 		MVector bitangent = normal ^ tangent;
 		bitangent.normalize();
 
-		// Construct transformation matrix R
+		// Construct projection matrix R
 		MMatrix R = initMatrix(p, normal, tangent, bitangent);
-		// Invert the transformation matrix
+
 		MMatrix R_inv = R.inverse();
 
-		// Transform the position vector into local space
+		// Transform the position vector into tangent space
 		MPoint delta = p * R_inv;
 		deltas.push_back(delta);
 
@@ -156,7 +157,7 @@ void DeltaMush::CalculateDeformation()
 
 		MVector edge = p1 - point;
 
-		// Compute tangent vector by removing the component along the normal
+		// Compute tangent vector 
 		MVector tangent = edge - (edge * normal) * normal;
 		tangent.normalize();
 
@@ -164,7 +165,7 @@ void DeltaMush::CalculateDeformation()
 		MVector bitangent = normal ^ tangent;
 		bitangent.normalize();
 
-		// Construct transformation matrix C
+		// Construct projection matrix C
 		MMatrix C = initMatrix(point, normal, tangent, bitangent);
 		MPoint defompoint = C * deltas[vertIndex];
 		deformedPoints.append(defompoint);
