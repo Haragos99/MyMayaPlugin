@@ -110,7 +110,7 @@ void DeltaMush::CalculateDelta()
 	//m_mesh.updateMesh();
 }
 
-MMatrix initMatrix(MPoint point, MVector normal, MVector tangent, MVector bitangent)
+MMatrix DeltaMush::initMatrix(MPoint point, MVector normal, MVector tangent, MVector bitangent)
 {
 	MMatrix M;
 	M[0][0] = tangent.x;   M[0][1] = bitangent.x;   M[0][2] = normal.x;   M[0][3] = point.x;
