@@ -1,8 +1,10 @@
 import maya.cmds as cmds
 
+# For debug mode
+path = r"C:\Users\Geri\Documents\Projects\CG\MyMayaPlugin\out\build\x64-Debug\Debug\MyMayaPlugin.mll"
 # Load the plugin by name
-if not cmds.pluginInfo('MyMayaPlugin', query=True, loaded=True):
-    cmds.loadPlugin(r"C:\Users\Geri\Documents\Projects\CG\MyMayaPlugin\out\build\x64-Debug\Debug\MyMayaPlugin.mll")
+if not cmds.pluginInfo(path, query=True, loaded=True):
+    cmds.loadPlugin(path)
 # Execute the custom command
 start_time = cmds.timerX()
 cmds.helloMaya()
