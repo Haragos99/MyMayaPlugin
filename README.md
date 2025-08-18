@@ -1,6 +1,7 @@
 # MyMayaPlugin — Improved Delta Mush Maya Deformer
 
 This is a Maya **plugin** implementing the method from my paper:
+
 [Improving Delta Mush Based Character Animation (CESCG 2020)](https://cescg.org/cescg_submission/improving-delta-mush-based-character-animation/)
 
 original repo: [https://github.com/Haragos99/sample-framework](https://github.com/Haragos99/sample-framework)
@@ -20,5 +21,4 @@ Requirements:
 
 ```bash
 mkdir build && cd build
-cmake -DMAYA_DEVKIT_ROOT="$MAYA_DEVKIT_ROOT" -DMAYA_VERSION=2025 ..
-cmake --build . --config Release
+cmake --build 
