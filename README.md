@@ -13,7 +13,7 @@ Original repository: [Haragos99/sample-framework](https://github.com/Haragos99/s
 - Self-Intersection Handling using CCD-based collision detection
 
 ## Results
-<img width="1121" height="415" alt="image" src="https://github.com/user-attachments/assets/dc59208b-07e3-448e-aebb-10d56f36d3ff" />
+<img width="560" height="207" alt="image" src="https://github.com/user-attachments/assets/dc59208b-07e3-448e-aebb-10d56f36d3ff" />
 
 ## Build
 Requirements:
