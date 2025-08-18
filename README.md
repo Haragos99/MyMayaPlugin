@@ -1,4 +1,4 @@
-# MyMayaPlugin — Improved Delta Mush Maya Deformer
+# MyMayaPlugin - Improved Delta Mush Maya Deformer
 
 This repository contains a Maya **plugin** that implements the method from my paper on handling self-intersections in character animation.  
 
