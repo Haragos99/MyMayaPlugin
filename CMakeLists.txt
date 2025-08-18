@@ -104,8 +104,3 @@ set_target_properties(MyMayaPlugin PROPERTIES
 add_custom_command(TARGET MyMayaPlugin PRE_BUILD
     COMMAND "${MAYA_SDK_ROOT}/bin/mayapy.exe" "${CMAKE_CURRENT_SOURCE_DIR}/src/scripts/Unload.py"
 )
-#add_custom_command(TARGET MyMayaPlugin POST_BUILD
- #   COMMAND ${CMAKE_COMMAND} -E copy
-  #          "$<TARGET_FILE:MyMayaPlugin>"
-   #         "${MAYA_SDK_ROOT}/plug-ins/"
-#)
