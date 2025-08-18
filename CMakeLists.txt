@@ -7,17 +7,34 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # 2. Maya SDK path 
 if(NOT DEFINED MAYA_SDK_ROOT)
-    # Look for installed Maya versions in default location
-    file(GLOB MAYA_VERSIONS "C:/Program Files/Autodesk/Maya*")
-    
-    # Sort descending to get the latest version
-    list(SORT MAYA_VERSIONS DESCENDING)
-    if(MAYA_VERSIONS)
-        list(GET MAYA_VERSIONS 0 MAYA_LATEST_PATH)
-        set(MAYA_SDK_ROOT "${MAYA_LATEST_PATH}" CACHE PATH "Path to Maya SDK")
-    else()
-        message(FATAL_ERROR "No Maya installation found in 'C:/Program Files/Autodesk/'. Please set -DMAYA_SDK_ROOT=...")
+
+    if(WIN32)
+        # Look for installed Maya versions in default Windows location
+        file(GLOB MAYA_VERSIONS "C:/Program Files/Autodesk/Maya*")
+        
+        # Sort descending to get the latest version
+        list(SORT MAYA_VERSIONS DESCENDING)
+        if(MAYA_VERSIONS)
+            list(GET MAYA_VERSIONS 0 MAYA_LATEST_PATH)
+            set(MAYA_SDK_ROOT "${MAYA_LATEST_PATH}" CACHE PATH "Path to Maya SDK")
+        else()
+            message(FATAL_ERROR "No Maya installation found in 'C:/Program Files/Autodesk/'. Please set -DMAYA_SDK_ROOT=...")
+        endif()
+
+    elseif(UNIX)
+        # Look for installed Maya versions in default Linux location
+        file(GLOB MAYA_VERSIONS "/usr/autodesk/maya*")
+        
+        list(SORT MAYA_VERSIONS DESCENDING)
+        if(MAYA_VERSIONS)
+            list(GET MAYA_VERSIONS 0 MAYA_LATEST_PATH)
+            set(MAYA_SDK_ROOT "${MAYA_LATEST_PATH}" CACHE PATH "Path to Maya SDK")
+        else()
+            message(FATAL_ERROR "No Maya installation found in '/usr/autodesk/'. Please set -DMAYA_SDK_ROOT=...")
+        endif()
+
     endif()
+
 endif()
 
 message(STATUS "Using Maya SDK path: ${MAYA_SDK_ROOT}")
