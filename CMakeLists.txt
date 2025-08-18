@@ -44,7 +44,7 @@ link_directories("${MAYA_SDK_ROOT}/lib")
 
 # Specify that this is a shared library (.dll/.mll)
 add_library(MyMayaPlugin SHARED
-    src/dllmain.cpp
+    "src/main.cpp"
     src/plugin.cpp
     src/mesh.cpp
     src/deltamush.cpp
