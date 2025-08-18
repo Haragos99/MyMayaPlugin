@@ -1,33 +1,21 @@
-# MyMayaPlugin
+# MyMayaPlugin — Improved Delta Mush Maya Deformer
 
-MyMayaPlugin is a C++ plugin for Autodesk Maya. It adds custom functionality to Maya using the Maya API.
+This is a Maya **deformer plugin** implementing the method from my paper:
+[Improving Delta Mush Based Character Animation (CESCG 2020)](https://cescg.org/cescg_submission/improving-delta-mush-based-character-animation/)
 
-## ✅ Features
+## Features
+-Laplacian Smoothing
+-Rest-Delta Computation
+-Self-Intersection Handling using CCD-based collision detection
 
-- Written in modern C++
-- Exposes custom commands to Maya
-- Can be loaded and unloaded from Python or MEL
 
----
+## Build
+Requirements:
+- Maya DevKit (2022–2025)
+- CMake ≥ 3.20
+- C++17 compiler
 
-## 🧰 Requirements
-
-- Autodesk Maya 
-- Visual Studio 2019 or newer
-- Maya Developer Kit (from Maya installation)
-- Set environment variables for include and lib directories
-
----
-
-## 🔧 Building the Plugin
-
-1. Clone or copy this project.
-2. Open the `.sln` file in Visual Studio.
-3. Set up the include/lib directories:
-Include: C:\Program Files\Autodesk\Maya2024\include
-Library: C:\Program Files\Autodesk\Maya2024\lib
-4. Build the project in `Release` or `Debug` mode.
-
-If successful, the `.mll` file will be created in:
-<ProjectDir>\x64\Release\MyMayaPlugin.mll
-
+```bash
+mkdir build && cd build
+cmake -DMAYA_DEVKIT_ROOT="$MAYA_DEVKIT_ROOT" -DMAYA_VERSION=2025 ..
+cmake --build . --config Release
