@@ -1,6 +1,6 @@
 # MyMayaPlugin — Improved Delta Mush Maya Deformer
 
-This is a Maya **deformer plugin** implementing the method from my paper:
+This is a Maya **plugin** implementing the method from my paper:
 [Improving Delta Mush Based Character Animation (CESCG 2020)](https://cescg.org/cescg_submission/improving-delta-mush-based-character-animation/)
 
 original repo: [https://github.com/Haragos99/sample-framework](https://github.com/Haragos99/sample-framework)
