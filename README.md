@@ -13,10 +13,12 @@ Original repository: [Haragos99/sample-framework](https://github.com/Haragos99/s
 - Self-Intersection Handling using CCD-based collision detection
 
 ## Results
-On each figure, the result of the default Delta Mush deformation is shown on the left, while the result using the proposed CCD-based scaling of delta vectors is shown on the right (this result from the paper).\n
+On each figure, the result of the default Delta Mush deformation is shown on the left, while the result using the proposed CCD-based scaling of delta vectors is shown on the right (this result from the paper).
+
 <img width="560" height="207" alt="image" src="https://github.com/user-attachments/assets/dc59208b-07e3-448e-aebb-10d56f36d3ff" />
-<img width="560" height="207" alt="image" src="https://github.com/user-attachments/assets/307434d0-5c02-40c4-a023-2b3d47f4a928" />
-<img width="560" height="207" alt="image" src="https://github.com/user-attachments/assets/0bc70a7d-194d-4f17-a069-978693030fe3" />
+<img width="560" height="207" alt="image" src="https://github.com/user-attachments/assets/1768675f-4729-45ba-aa01-58a80c1fe340" />
+<img width="560" height="207" alt="image" src="https://github.com/user-attachments/assets/8357a237-c136-400b-bfb6-5a3c7b6c21bb" />
+
 
 
 
