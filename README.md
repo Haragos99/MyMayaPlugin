@@ -1,17 +1,19 @@
 # MyMayaPlugin — Improved Delta Mush Maya Deformer
 
-This is a Maya **plugin** implementing the method from my paper:
+This repository contains a Maya **plugin** that implements the method from my paper on handling self-intersections in character animation.  
 
-[Improving Delta Mush Based Character Animation (CESCG 2020)](https://cescg.org/cescg_submission/improving-delta-mush-based-character-animation/)
+Paper: [Improving Delta Mush Based Character Animation (CESCG 2025)](https://cescg.org/cescg_submission/improving-delta-mush-based-character-animation/)  
 
-original repo: [https://github.com/Haragos99/sample-framework](https://github.com/Haragos99/sample-framework)
+Original repository: [Haragos99/sample-framework](https://github.com/Haragos99/sample-framework)
+
 
 ## Features
 - Laplacian Smoothing
 - Rest-Delta Computation
 - Self-Intersection Handling using CCD-based collision detection
 
-
+## Results
+<img width="1121" height="415" alt="image" src="https://github.com/user-attachments/assets/dc59208b-07e3-448e-aebb-10d56f36d3ff" />
 
 ## Build
 Requirements:
