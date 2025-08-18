@@ -25,7 +25,7 @@ On each figure, the result of the default Delta Mush deformation is shown on the
 ## Build
 Requirements:
 - Maya DevKit (2022–2025)
-- CMake ≥ 3.20
+- CMake ≥ 3.16
 - C++17 compiler
 
 ```bash
