@@ -22,4 +22,7 @@
 #include <maya/MPoint.h>
 #include <maya/MItSelectionList.h>
 #include <maya/MCallbackIdArray.h>
+#include <maya/MEventMessage.h>
+#include <maya/MDagMessage.h>
+#include <maya/MNodeMessage.h>
 #include <Eigen/Core>
