@@ -25,4 +25,5 @@
 #include <maya/MEventMessage.h>
 #include <maya/MDagMessage.h>
 #include <maya/MNodeMessage.h>
+#include <maya/MPlug.h>
 #include <Eigen/Core>

@@ -1,6 +1,24 @@
 #include "plugin.h"
 
 
+MCallbackIdArray MyPluginCmd::g_callbackIds;
+
+
+void MyPluginCmd::onAttrChanged(MNodeMessage::AttributeMessage msg,
+    MPlug& plug,
+    MPlug& otherPlug,
+    void* clientData)
+{
+    MGlobal::displayInfo("HAAAAAAAAAA");
+    if (msg & MNodeMessage::kAttributeSet)
+    {
+        MString attr = plug.partialName();
+        if (attr == "tx" || attr == "ty" || attr == "tz")
+        {
+            MGlobal::displayInfo("Translation changed: " + attr);
+        }
+    }
+}
 
 MStatus MyPluginCmd::smoothMesh(MObject& meshObj, int iterations)
 {
@@ -67,32 +85,54 @@ MStatus MyPluginCmd::doIt(const MArgList&)
         MGlobal::displayError("No object selected.");
         return MS::kFailure;
     }
+    selection.add("pCube1");  // pCube1 is the transform, pCubeShape1 is the shape
+    MObject transformNode;
+    selection.getDependNode(0, transformNode);
 
 
+        if (!transformNode.isNull())
+        {
+            MStatus status;
+            //MCallbackId id = MDagMessage::addWorldMatrixModifiedCallback(node, onTransformChanged, nullptr, &status);
+            MCallbackId id = MNodeMessage::addAttributeChangedCallback(
+                transformNode,
+                onAttrChanged,
+                nullptr);
+            if (status != MS::kSuccess)
+            {
+                MGlobal::displayError("Failed to add callback");
+            }
+            else
+            {
+                g_callbackIds.append(id);
+                MGlobal::displayInfo("Addd");
+            }
 
-    MDagPath dagPath;
-    selection.getDagPath(0, dagPath);  // Get first selected item
-
-    MItSelectionList iter(selection, MFn::kMesh);
-    MObject meshObj;
-    iter.getDependNode(meshObj);
-
-    if (meshObj.isNull())
-    {
-        MGlobal::displayError("No mesh found in selection.");
-        return MS::kFailure;
-    }
-
-    //smoothMesh(meshObj, 10);
-
-    deltamush = std::make_unique<DeltaMush>(dagPath);
-    deltamush->CalculateDelta();
+        }
 
 
-    MGlobal::displayInfo("Mesh modified successfully.");
-    return MStatus::kSuccess;
+        MDagPath dagPath;
+        selection.getDagPath(0, dagPath);  // Get first selected item
+
+        MItSelectionList iter(selection, MFn::kMesh);
+        MObject meshObj;
+        iter.getDependNode(meshObj);
+
+        if (meshObj.isNull())
+        {
+            MGlobal::displayError("No mesh found in selection.");
+            return MS::kFailure;
+        }
+
+        //smoothMesh(meshObj, 10);
+
+        deltamush = std::make_unique<DeltaMush>(dagPath);
+        deltamush->CalculateDelta();
+
+
+        MGlobal::displayInfo("Mesh modified successfully.");
+        return MStatus::kSuccess;
 }
-
 
 
 MStatus MyPluginCmd::createCube()

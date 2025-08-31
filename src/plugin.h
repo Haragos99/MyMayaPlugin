@@ -9,8 +9,9 @@ private:
     std::unique_ptr<DeltaMush> deltamush;
     MStatus createCube();
     MStatus smoothMesh(MObject& meshObj, int iterations);
-
+    static MCallbackIdArray g_callbackIds;
 public:
+    static void onAttrChanged(MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug& otherPlug, void* clientData);
     MStatus doIt(const MArgList&) override;
     static void* creator() { return new MyPluginCmd; }
     // Static function to call from callbacks
