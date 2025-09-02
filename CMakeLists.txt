@@ -44,10 +44,11 @@ link_directories("${MAYA_SDK_ROOT}/lib")
 
 # Specify that this is a shared library (.dll/.mll)
 add_library(MyMayaPlugin SHARED
-    "src/main.cpp"
+    src/main.cpp
     src/plugin.cpp
     src/mesh.cpp
     src/deltamush.cpp
+    src/deltamushnode.cpp
 )
 
 # If you want to include headers in IDE:
@@ -56,6 +57,7 @@ target_sources(MyMayaPlugin PRIVATE
     src/framework.h
     src/mesh.h
     src/plugin.h
+    src/deltamushnode.h
 )
 
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
