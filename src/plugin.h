@@ -6,10 +6,12 @@ class MyPluginCmd : public MPxCommand {
 
 private:
 
-    std::unique_ptr<DeltaMush> deltamush;
+    static std::shared_ptr<DeltaMush> deltamush;
     MStatus createCube();
     MStatus smoothMesh(MObject& meshObj, int iterations);
     static MCallbackIdArray g_callbackIds;
+    // Helper to draw a line
+    
 public:
     static void onAttrChanged(MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug& otherPlug, void* clientData);
     MStatus doIt(const MArgList&) override;

@@ -1,12 +1,14 @@
 #include "framework.h"
 #include "mesh.h"
-
+#include <maya/MString.h>
 
 MeshHandler::MeshHandler(const MDagPath& dagpath) : m_dagPath(dagpath), m_fnMesh(dagpath)
 {
     m_fnMesh.getPoints(m_vertices, MSpace::kObject);
-    m_fnMesh.getNormals(m_normals, MSpace::kObject);
+    //m_fnMesh.getNormals(m_normals, MSpace::kObject);
+    m_fnMesh.getVertexNormals(m_normals);
     m_fnMesh.getVertices(m_verticesCounts, m_verticesIndices);
+    initConnected();
 }
 
 MeshHandler::MeshHandler(const MeshHandler& other)
@@ -16,10 +18,51 @@ MeshHandler::MeshHandler(const MeshHandler& other)
     m_verticesCounts(other.m_verticesCounts),
     m_verticesIndices(other.m_verticesIndices),
     m_fnMesh(other.m_dagPath) // reinitialize from copied dagPath
-{}
+{
+    initConnected();
+}
 
 
+MeshHandler::MeshHandler(const MObject& mesh) : m_fnMesh (mesh)
+{
+    m_fnMesh.getVertices(m_verticesCounts, m_verticesIndices);
 
+    m_fnMesh.getTangents(m_tangents);
+
+    m_fnMesh.getBinormals(m_binormals);
+
+
+    int se = m_verticesCounts.length();
+    int te = m_verticesIndices.length();
+    initConnected();
+
+
+}
+
+std::set<int> MeshHandler::getConnectedVertices(int index)
+{
+    return connected[index];
+}
+
+
+void MeshHandler::initConnected()
+{
+    connected.resize(m_fnMesh.numVertices());
+
+    int indexOffset = 0;
+    for (unsigned int f = 0; f < m_verticesCounts.length(); ++f)
+    {
+        int count = m_verticesCounts[f];
+        for (int i = 0; i < count; ++i)
+        {
+            int v0 = m_verticesIndices[indexOffset + i];
+            int v1 = m_verticesIndices[indexOffset + (i + 1) % count];
+            connected[v0].insert(v1);
+            connected[v1].insert(v0);
+        }
+        indexOffset += count;
+    }
+}
 void MeshHandler::resetNormals()
 {
     m_normals.setLength(m_vertices.length());
@@ -166,9 +209,54 @@ void MeshHandler::setNormals(const MFloatVectorArray& normals)
     m_normals = normals;
 }
 
+void MeshHandler::info()
+{
+    MString msg;
+    msg += "Vertices: ";      msg += (int)m_vertices.length();
+    msg += " | Normals: ";    msg += (int)m_normals.length();
+    msg += " | VertexCounts: "; msg += (int)m_verticesCounts.length();
+    msg += " | VertexIndices: "; msg += (int)m_verticesIndices.length();
+    msg += " | Binormals: "; msg += (int)m_binormals.length();
+    msg += " | Tangents: "; msg += (int)m_tangents.length();
+
+    MGlobal::displayInfo(msg);
+}
+
+
 void MeshHandler::updateMesh() {
     m_fnMesh.setPoints(m_vertices, MSpace::kObject);
-    //m_fnMesh.setNormals(m_normals, MSpace::kObject);
+    m_fnMesh.setNormals(m_normals, MSpace::kObject);
+}
+
+
+MeshHandler MeshHandler::createCopy()
+{
+    MStatus stattus;
+    // Create a new mesh data container
+    MFnMeshData meshDataFn;
+    MObject newMeshData = meshDataFn.create(&stattus);
+
+    MObject meshObj = m_fnMesh.object();
+
+    if (meshObj.isNull())
+    {
+        MGlobal::displayError("Object is null");
+    }
+
+    MObject copiedMeshObj = m_fnMesh.copy(meshObj, newMeshData, &stattus);
+
+
+    if (copiedMeshObj.isNull())
+    {
+        MGlobal::displayError("Copy Object is null");
+    }
+
+    MeshHandler copyMeshHandeler = MeshHandler (copiedMeshObj);
+    copyMeshHandeler.setNormals(this->m_normals);
+    copyMeshHandeler.setVertices(this->m_vertices);
+    copyMeshHandeler.info();
+    MGlobal::displayInfo("Copy successfully.");
+    return copyMeshHandeler;
 }
 
 

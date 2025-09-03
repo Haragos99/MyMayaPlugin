@@ -1,23 +1,18 @@
 #include "plugin.h"
-
+#include "deltamushnode.h"
 
 MCallbackIdArray MyPluginCmd::g_callbackIds;
-
-
+std::shared_ptr<DeltaMush> MyPluginCmd::deltamush;
 void MyPluginCmd::onAttrChanged(MNodeMessage::AttributeMessage msg,
     MPlug& plug,
     MPlug& otherPlug,
     void* clientData)
 {
-    MGlobal::displayInfo("HAAAAAAAAAA");
-    if (msg & MNodeMessage::kAttributeSet)
-    {
-        MString attr = plug.partialName();
-        if (attr == "tx" || attr == "ty" || attr == "tz")
-        {
-            MGlobal::displayInfo("Translation changed: " + attr);
-        }
-    }
+
+      MGlobal::displayInfo("Translation changed: " );
+    //  deltamush->CalculateDeformation();
+      //deltamush->CalculateDeformation();
+      //deltamush->move();
 }
 
 MStatus MyPluginCmd::smoothMesh(MObject& meshObj, int iterations)
@@ -85,13 +80,37 @@ MStatus MyPluginCmd::doIt(const MArgList&)
         MGlobal::displayError("No object selected.");
         return MS::kFailure;
     }
-    selection.add("pCube1");  // pCube1 is the transform, pCubeShape1 is the shape
-    MObject transformNode;
-    selection.getDependNode(0, transformNode);
+   // selection.add("pCube1");  // pCube1 is the transform, pCubeShape1 is the shape
+
+    /*
+    selection.add("joint1");
+    selection.add("joint2");
+    selection.add("joint3");
 
 
+
+
+    MObject node;
+    MCallbackId callbackId;
+    for (int i = 1; i < selection.length(); ++i)
+    {
+
+        selection.getDependNode(i, node);
+        callbackId = MNodeMessage::addAttributeChangedCallback(
+            node,
+            onAttrChanged,
+            nullptr
+        );
+        g_callbackIds.append(callbackId);
+        MFnDependencyNode fn(node);
+        MGlobal::displayInfo("Add callback for: " + fn.name());
+        
+    }
+    */
+    /*
         if (!transformNode.isNull())
         {
+
             MStatus status;
             //MCallbackId id = MDagMessage::addWorldMatrixModifiedCallback(node, onTransformChanged, nullptr, &status);
             MCallbackId id = MNodeMessage::addAttributeChangedCallback(
@@ -105,15 +124,19 @@ MStatus MyPluginCmd::doIt(const MArgList&)
             else
             {
                 g_callbackIds.append(id);
-                MGlobal::displayInfo("Addd");
+                MFnDependencyNode fn(transformNode);
+                MGlobal::displayInfo("Add callback for: " + fn.name());
             }
 
         }
-
-
+        */
+        MStatus status;
+        MString nodeType("deltaMushNode");
+        MFnDependencyNode fnDep;
+        MObject node = fnDep.create(nodeType, &status);
         MDagPath dagPath;
         selection.getDagPath(0, dagPath);  // Get first selected item
-
+        MGlobal::displayInfo("Add mesh for: " + dagPath.fullPathName());
         MItSelectionList iter(selection, MFn::kMesh);
         MObject meshObj;
         iter.getDependNode(meshObj);
@@ -126,9 +149,13 @@ MStatus MyPluginCmd::doIt(const MArgList&)
 
         //smoothMesh(meshObj, 10);
 
-        deltamush = std::make_unique<DeltaMush>(dagPath);
-        deltamush->CalculateDelta();
-
+        deltamush = std::make_shared<DeltaMush>(dagPath);
+        //deltamush->CalculateDelta();
+        //deltamush->CalculateDeformation();
+        DeltaMushNode::g_deltamushCache = deltamush;
+        MString cmd;
+        cmd.format("deformer -type \"^1s\" ^2s;", nodeType, dagPath.fullPathName());
+        MGlobal::executeCommand(cmd);
 
         MGlobal::displayInfo("Mesh modified successfully.");
         return MStatus::kSuccess;
@@ -198,3 +225,7 @@ MStatus MyPluginCmd::createCube()
     MGlobal::displayInfo("A Cube the mesh created successfully.");
 
 }
+
+
+
+

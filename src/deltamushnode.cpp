@@ -10,8 +10,6 @@ MStatus DeltaMushNode::deform(MDataBlock& data,
     const MMatrix& localToWorldMatrix,
     unsigned int geomIndex)
 {
-
-    
     MStatus status;
     MArrayDataHandle inputArray = data.inputArrayValue(input, &status);
     inputArray.jumpToElement(geomIndex);
@@ -20,15 +18,22 @@ MStatus DeltaMushNode::deform(MDataBlock& data,
     MObject meshObj = inputGeomData.asMesh();  // or asMeshTransformed()
     MFnMesh fnMesh(meshObj, &status);
     MGlobal::displayInfo("NODE ");
+    MPointArray pa;
+
+
     if (g_deltamushCache != nullptr)
     {
         MGlobal::displayInfo(fnMesh.name());
+        //g_deltamushCache->CalculateDeformation();
+        itGeo.allPositions(pa);
+        g_deltamushCache->test(pa);
         
     }
     else
     {
         MGlobal::displayInfo("Bad ");
     }
+    
 
     // Iterate over skinned geometry
     for (; !itGeo.isDone(); itGeo.next())
