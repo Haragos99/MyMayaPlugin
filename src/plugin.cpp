@@ -150,8 +150,8 @@ MStatus MyPluginCmd::doIt(const MArgList&)
         //smoothMesh(meshObj, 10);
 
         deltamush = std::make_shared<DeltaMush>(dagPath);
-        //deltamush->CalculateDelta();
-        //deltamush->CalculateDeformation();
+        deltamush->CalculateDelta();
+        deltamush->CalculateDeformation();
         DeltaMushNode::g_deltamushCache = deltamush;
         MString cmd;
         cmd.format("deformer -type \"^1s\" ^2s;", nodeType, dagPath.fullPathName());

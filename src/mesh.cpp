@@ -6,7 +6,7 @@ MeshHandler::MeshHandler(const MDagPath& dagpath) : m_dagPath(dagpath), m_fnMesh
 {
     m_fnMesh.getPoints(m_vertices, MSpace::kObject);
     //m_fnMesh.getNormals(m_normals, MSpace::kObject);
-    m_fnMesh.getVertexNormals(m_normals);
+    m_fnMesh.getVertexNormals(false,m_normals);
     m_fnMesh.getVertices(m_verticesCounts, m_verticesIndices);
     initConnected();
 }
@@ -225,7 +225,8 @@ void MeshHandler::info()
 
 void MeshHandler::updateMesh() {
     m_fnMesh.setPoints(m_vertices, MSpace::kObject);
-    m_fnMesh.setNormals(m_normals, MSpace::kObject);
+    //m_fnMesh.setNormals(m_normals, MSpace::kObject);
+    m_fnMesh.updateSurface();
 }
 
 

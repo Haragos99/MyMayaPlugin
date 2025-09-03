@@ -54,6 +54,7 @@ MeshHandler DeltaMush::smoothMesh(MeshHandler mesh,int iterations)
 void DeltaMush::CalculateDelta()
 {
 	deltas.clear();
+
 	auto smooth = smoothMesh(m_mesh,10);
 	smooth.updateMesh();
 	smooth.info();
@@ -61,30 +62,31 @@ void DeltaMush::CalculateDelta()
 	MPoint p1(0.0, 0.0, 0.0);
 	MPoint p2(1.0, 1.0, 1.0);
 	drawLine(p1, p2);
+	auto original = m_mesh.getVertices();
 	auto points = smooth.getVertices();
 	auto normals = smooth.getNormals();
 	for (int vertIndex = 0; vertIndex < points.length(); ++vertIndex)
 	{
 		MGlobal::displayInfo("O-null");
 		MPoint point = points[vertIndex];
-		if (status != MS::kSuccess) 
+		if (status != MS::kSuccess)
 		{
 			MGlobal::displayError("Failed to get vertex position.");
 			continue;
 		}
 		// Retrieve vertex normal
-		MVector normal= normals[vertIndex];
-		
-		if (status != MS::kSuccess) 
+		MVector normal = normals[vertIndex];
+
+		if (status != MS::kSuccess)
 		{
 			MGlobal::displayError("Failed to get vertex normal.");
 			continue;
 		}
 		normal.normalize();
 
+		auto verexes = smooth.getConnectedVertices(vertIndex);
 
-
-		MPoint p1 = points[0];
+		MPoint p1 = points[*verexes.begin()];
 
 		MVector edge = p1 - point;
 
@@ -102,7 +104,7 @@ void DeltaMush::CalculateDelta()
 		MMatrix R_inv = R.inverse();
 
 		// Transform the position vector into tangent space
-		MPoint delta = point * R_inv;
+		MPoint delta = R_inv * original[vertIndex];
 		deltas.push_back(delta);
 		std::string d = std::to_string(delta[0]) + ", " + std::to_string(delta[1]) + ", " + std::to_string(delta[2]);
 		MGlobal::displayInfo(d.c_str());
@@ -117,10 +119,10 @@ void DeltaMush::CalculateDelta()
 MMatrix DeltaMush::initMatrix(MPoint point, MVector normal, MVector tangent, MVector bitangent)
 {
 	MMatrix M;
-	M[0][0] = tangent.x;   M[0][1] = bitangent.x;   M[0][2] = normal.x;   M[0][3] = point.x;
-	M[1][0] = tangent.y;   M[1][1] = bitangent.y;   M[1][2] = normal.y;   M[1][3] = point.y;
-	M[2][0] = tangent.z;   M[2][1] = bitangent.z;   M[2][2] = normal.z;   M[2][3] = point.z;
-	M[3][0] = 0.0;         M[3][1] = 0.0;           M[3][2] = 0.0;        M[3][3] = 1.0;
+	M[0][0] = tangent.x;   M[0][1] = normal.x;   M[0][2] = bitangent.x;   M[0][3] = point.x;
+	M[1][0] = tangent.y;   M[1][1] = normal.y;   M[1][2] = bitangent.y;   M[1][3] = point.y;
+	M[2][0] = tangent.z;   M[2][1] = normal.z;   M[2][2] = bitangent.z;   M[2][3] = point.z;
+	M[3][0] = 0.0;         M[3][1] = 0.0;        M[3][2] = 0.0;        M[3][3] = 1.0;
 
 	return M;
 }
@@ -128,12 +130,28 @@ MMatrix DeltaMush::initMatrix(MPoint point, MVector normal, MVector tangent, MVe
 void DeltaMush::CalculateDeformation()
 {
 	MGlobal::displayInfo("Adsdsad ");
+	auto Anormals = m_mesh.getNormals();
 	auto smooth = smoothMesh(m_mesh, 10);
 	smooth.updateMesh();
 	smooth.info();
 	MStatus status;
+	
 	auto points = smooth.getVertices();
 	auto normals = smooth.getNormals();
+
+	for (int i = 0; i < normals.length(); i++)
+	{
+		MGlobal::displayInfo(MString("S Normal: ") +
+			normals[i].x + ", " +
+			normals[i].y + ", " +
+			normals[i].z + MString("! O Normal: ")+
+			Anormals[i].x + ", " +
+			Anormals[i].y + ", " +
+			Anormals[i].z 
+		);
+
+	}
+
 	MPointArray deformedPoints;
 	for (int vertIndex = 0; vertIndex < points.length(); ++vertIndex)
 	{
@@ -154,7 +172,9 @@ void DeltaMush::CalculateDeformation()
 		normal.normalize();
 
 		MIntArray connectedVertices;
-		MPoint p1 = points[0];
+		auto verexes = smooth.getConnectedVertices(vertIndex);
+
+		MPoint p1 = points[*verexes.begin()];
 
 		MVector edge = p1 - point;
 
@@ -170,6 +190,7 @@ void DeltaMush::CalculateDeformation()
 		MMatrix C = initMatrix(point, normal, tangent, bitangent);
 		MPoint defompoint = C * deltas[vertIndex];
 		deformedPoints.append(defompoint);
+		
 
 	}
 
@@ -178,7 +199,7 @@ void DeltaMush::CalculateDeformation()
 	
 	MGlobal::displayInfo(std::to_string(deformedPoints.length()).c_str());
 	m_mesh.setVertices(deformedPoints);
-	//m_mesh.updateMesh();
+	m_mesh.updateMesh();
 }
 
 // Implementation of line drawing using legacy OpenGL
