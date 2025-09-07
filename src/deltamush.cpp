@@ -54,9 +54,10 @@ MeshHandler DeltaMush::smoothMesh(MeshHandler mesh,int iterations)
 void DeltaMush::CalculateDelta()
 {
 	deltas.clear();
-
+	/// TODO: Fix Normals
 	auto smooth = smoothMesh(m_mesh,10);
 	smooth.updateMesh();
+	smooth.recalculateNormals();
 	smooth.info();
 	MStatus status;
 	MPoint p1(0.0, 0.0, 0.0);
@@ -132,13 +133,14 @@ void DeltaMush::CalculateDeformation()
 	MGlobal::displayInfo("Adsdsad ");
 	auto Anormals = m_mesh.getNormals();
 	auto smooth = smoothMesh(m_mesh, 10);
+	smooth.recalculateNormals();
 	smooth.updateMesh();
 	smooth.info();
 	MStatus status;
 	
 	auto points = smooth.getVertices();
 	auto normals = smooth.getNormals();
-
+	/*
 	for (int i = 0; i < normals.length(); i++)
 	{
 		MGlobal::displayInfo(MString("S Normal: ") +
@@ -151,7 +153,7 @@ void DeltaMush::CalculateDeformation()
 		);
 
 	}
-
+	*/
 	MPointArray deformedPoints;
 	for (int vertIndex = 0; vertIndex < points.length(); ++vertIndex)
 	{
@@ -232,11 +234,10 @@ void DeltaMush::move()
 
 void DeltaMush::test(MPointArray points)
 {
-	m_mesh.info();
-	MGlobal::displayInfo("Test k ");
+	MColorArray colors;
+	colors.setLength(points.length());
+
 	m_mesh.setVertices(points);
-	m_mesh.updateMesh();
-	auto smooth = smoothMesh(m_mesh, 1);
-	m_mesh.setVertices(smooth.getVertices());
+	CalculateDeformation();
 	//m_mesh.updateMesh();
 }
