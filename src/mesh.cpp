@@ -5,7 +5,6 @@
 MeshHandler::MeshHandler(const MDagPath& dagpath) : m_dagPath(dagpath), m_fnMesh(dagpath)
 {
     m_fnMesh.getPoints(m_vertices, MSpace::kObject);
-    //m_fnMesh.getNormals(m_normals, MSpace::kObject);
     m_fnMesh.getVertexNormals(false,m_normals);
     m_fnMesh.getVertices(m_verticesCounts, m_verticesIndices);
     initConnected();
@@ -22,6 +21,14 @@ MeshHandler::MeshHandler(const MeshHandler& other)
     initConnected();
 }
 
+
+void MeshHandler::addcolor(MColorArray colors)
+{
+    // TODO: It kills maya
+    MColor color = MColor(1);
+    m_fnMesh.setVertexColor(color, 0);
+    m_fnMesh.setFaceColor(color, 0);
+}
 
 MeshHandler::MeshHandler(const MObject& mesh) : m_fnMesh (mesh)
 {
@@ -66,7 +73,8 @@ void MeshHandler::initConnected()
 void MeshHandler::resetNormals()
 {
     m_normals.setLength(m_vertices.length());
-    for (unsigned int i = 0; i < m_normals.length(); ++i) {
+    for (unsigned int i = 0; i < m_normals.length(); ++i) 
+    {
         m_normals[i] = MFloatVector(0.0f, 0.0f, 0.0f);
     }
 
@@ -131,7 +139,8 @@ void MeshHandler::calcVerticesNormal(std::vector<int>& polyIndices, MVector face
 
 void MeshHandler::normalizeNormals()
 {
-    for (unsigned int i = 0; i < m_normals.length(); ++i) {
+    for (int i = 0; i < m_normals.length(); ++i) 
+    {
         m_normals[i].normalize();
     }
 }
@@ -152,7 +161,8 @@ void MeshHandler::recalculateNormals()
 }
 
 MeshHandler& MeshHandler::operator=(const MeshHandler& other) {
-    if (this != &other) {
+    if (this != &other) 
+    {
         m_dagPath = other.m_dagPath;
         m_vertices = other.m_vertices;
         m_normals = other.m_normals;
@@ -237,7 +247,7 @@ MeshHandler MeshHandler::createCopy()
     MFnMeshData meshDataFn;
     MObject newMeshData = meshDataFn.create(&stattus);
 
-    MObject meshObj = m_fnMesh.object();
+    MObject meshObj = m_fnMesh.object(); 
 
     if (meshObj.isNull())
     {

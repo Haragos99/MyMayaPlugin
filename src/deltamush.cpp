@@ -37,59 +37,39 @@ MeshHandler DeltaMush::smoothMesh(MeshHandler mesh,int iterations)
 				MVector diff = avgPos - currentPoints[idx];
 				updatedPoints[idx] += diff * smoothingFactor;
 			}
-
 			itVert->next();
 		}
 		currentPoints = updatedPoints;
-
 	}
 	mesh.setVertices(currentPoints);
-	//mesh.updateMesh();
-	return mesh.createCopy();
-	//return std::make_shared<MeshHandler>(mesh);
-
+	return mesh;
 }
-
 
 void DeltaMush::CalculateDelta()
 {
 	deltas.clear();
-	/// TODO: Fix Normals
 	auto smooth = smoothMesh(m_mesh,10);
-	smooth.updateMesh();
 	smooth.recalculateNormals();
 	smooth.info();
+
 	MStatus status;
-	MPoint p1(0.0, 0.0, 0.0);
-	MPoint p2(1.0, 1.0, 1.0);
-	drawLine(p1, p2);
-	auto original = m_mesh.getVertices();
-	auto points = smooth.getVertices();
-	auto normals = smooth.getNormals();
-	for (int vertIndex = 0; vertIndex < points.length(); ++vertIndex)
+	auto& originalPoints = m_mesh.getVertices();
+	auto& smoothpoints = smooth.getVertices();
+	auto& normals = smooth.getNormals();
+	for (int vertIndex = 0; vertIndex < smoothpoints.length(); ++vertIndex)
 	{
-		MGlobal::displayInfo("O-null");
-		MPoint point = points[vertIndex];
-		if (status != MS::kSuccess)
-		{
-			MGlobal::displayError("Failed to get vertex position.");
-			continue;
-		}
+		MPoint point = smoothpoints[vertIndex];
+
 		// Retrieve vertex normal
 		MVector normal = normals[vertIndex];
 
-		if (status != MS::kSuccess)
-		{
-			MGlobal::displayError("Failed to get vertex normal.");
-			continue;
-		}
 		normal.normalize();
 
-		auto verexes = smooth.getConnectedVertices(vertIndex);
+		int neighborIdx = *smooth.getConnectedVertices(vertIndex).begin();
 
-		MPoint p1 = points[*verexes.begin()];
+		MPoint neighbor = smoothpoints[neighborIdx];
 
-		MVector edge = p1 - point;
+		MVector edge = neighbor - point;
 
 		// Compute tangent vector 
 		MVector tangent = edge - (edge * normal) * normal;
@@ -105,16 +85,12 @@ void DeltaMush::CalculateDelta()
 		MMatrix R_inv = R.inverse();
 
 		// Transform the position vector into tangent space
-		MPoint delta = R_inv * original[vertIndex];
+		MPoint delta = R_inv * originalPoints[vertIndex];
 		deltas.push_back(delta);
-		std::string d = std::to_string(delta[0]) + ", " + std::to_string(delta[1]) + ", " + std::to_string(delta[2]);
-		MGlobal::displayInfo(d.c_str());
 
 	}
 	MGlobal::displayInfo("Delta successfully.");
 	MGlobal::displayInfo(std::to_string(deltas.size()).c_str());
-	//m_mesh.recalculateNormals();
-	//m_mesh.updateMesh();
 }
 
 MMatrix DeltaMush::initMatrix(MPoint point, MVector normal, MVector tangent, MVector bitangent)
@@ -130,55 +106,25 @@ MMatrix DeltaMush::initMatrix(MPoint point, MVector normal, MVector tangent, MVe
 
 void DeltaMush::CalculateDeformation()
 {
-	MGlobal::displayInfo("Adsdsad ");
-	auto Anormals = m_mesh.getNormals();
 	auto smooth = smoothMesh(m_mesh, 10);
 	smooth.recalculateNormals();
-	smooth.updateMesh();
-	smooth.info();
-	MStatus status;
-	
-	auto points = smooth.getVertices();
-	auto normals = smooth.getNormals();
-	/*
-	for (int i = 0; i < normals.length(); i++)
-	{
-		MGlobal::displayInfo(MString("S Normal: ") +
-			normals[i].x + ", " +
-			normals[i].y + ", " +
-			normals[i].z + MString("! O Normal: ")+
-			Anormals[i].x + ", " +
-			Anormals[i].y + ", " +
-			Anormals[i].z 
-		);
 
-	}
-	*/
+	MStatus status;	
+	auto& smoothPoints = smooth.getVertices();
+	auto& smoothNormals = smooth.getNormals();
 	MPointArray deformedPoints;
-	for (int vertIndex = 0; vertIndex < points.length(); ++vertIndex)
+	for (int vertIndex = 0; vertIndex < smoothPoints.length(); ++vertIndex)
 	{
-		MPoint point = points[vertIndex];
-		if (status != MS::kSuccess)
-		{
-			MGlobal::displayError("Failed to get vertex position.");
-			continue;
-		}
+		MPoint point = smoothPoints[vertIndex];
 		// Retrieve vertex normal
-		MVector normal = normals[vertIndex];
-
-		if (status != MS::kSuccess)
-		{
-			MGlobal::displayError("Failed to get vertex normal.");
-			continue;
-		}
+		MVector normal = smoothNormals[vertIndex];
 		normal.normalize();
 
-		MIntArray connectedVertices;
-		auto verexes = smooth.getConnectedVertices(vertIndex);
+		int neighborIdx = *smooth.getConnectedVertices(vertIndex).begin();
 
-		MPoint p1 = points[*verexes.begin()];
+		MPoint neighbor = smoothPoints[neighborIdx];
 
-		MVector edge = p1 - point;
+		MVector edge = neighbor - point;
 
 		// Compute tangent vector 
 		MVector tangent = edge - (edge * normal) * normal;
@@ -190,16 +136,9 @@ void DeltaMush::CalculateDeformation()
 
 		// Construct projection matrix C
 		MMatrix C = initMatrix(point, normal, tangent, bitangent);
-		MPoint defompoint = C * deltas[vertIndex];
-		deformedPoints.append(defompoint);
-		
-
+		MPoint defomedpoint = C * deltas[vertIndex];
+		deformedPoints.append(defomedpoint);
 	}
-
-
-	
-	
-	MGlobal::displayInfo(std::to_string(deformedPoints.length()).c_str());
 	m_mesh.setVertices(deformedPoints);
 	m_mesh.updateMesh();
 }
@@ -207,37 +146,22 @@ void DeltaMush::CalculateDeformation()
 // Implementation of line drawing using legacy OpenGL
 void DeltaMush::drawLine(const MPoint& p1, const MPoint& p2)
 {
-	MGlobal::displayInfo("Trscs: ");
+
 }
 
 
 void DeltaMush::move()
 {
-	/*
-	MPointArray currentPoints = m_mesh.getVertices();
-	MStatus status;
-	auto vertIter = m_mesh.getVertexIterator(&status);
-	for (; !vertIter->isDone(); vertIter->next())
-	{
-		MPoint avgPos(0.1, 0.1, 0.1);
-		int idx = vertIter->index();
-		currentPoints[idx] += avgPos;
-	}
-	m_mesh.setVertices(currentPoints);
-	m_mesh.updateMesh();
-	*/
 	auto smooth = smoothMesh(m_mesh, 1);
 	m_mesh = smooth;
 	m_mesh.updateMesh();
 }
 
-
 void DeltaMush::test(MPointArray points)
 {
 	MColorArray colors;
 	colors.setLength(points.length());
-
+	//m_mesh.addcolor();
 	m_mesh.setVertices(points);
 	CalculateDeformation();
-	//m_mesh.updateMesh();
 }

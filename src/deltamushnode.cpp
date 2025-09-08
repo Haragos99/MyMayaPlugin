@@ -11,45 +11,16 @@ MStatus DeltaMushNode::deform(MDataBlock& data,
     unsigned int geomIndex)
 {
     MStatus status;
-    MArrayDataHandle inputArray = data.inputArrayValue(input, &status);
-    inputArray.jumpToElement(geomIndex);
-
-    MDataHandle inputGeomData = inputArray.inputValue().child(inputGeom);
-    MObject meshObj = inputGeomData.asMesh();  // or asMeshTransformed()
-    MFnMesh fnMesh(meshObj, &status);
-    MGlobal::displayInfo("NODE ");
-    MPointArray pa;
-
-
+    MPointArray points;
     if (g_deltamushCache != nullptr)
     {
-        MGlobal::displayInfo(fnMesh.name());
-        //g_deltamushCache->CalculateDeformation();
-        itGeo.allPositions(pa);
-        g_deltamushCache->test(pa);
-        
+        itGeo.allPositions(points);
+        g_deltamushCache->test(points); 
     }
     else
     {
-        MGlobal::displayInfo("Bad ");
+        MGlobal::displayError("Delta Mush is null"); 
     }
     
-
-    // Iterate over skinned geometry
-    for (; !itGeo.isDone(); itGeo.next())
-    {
-        unsigned int vid = itGeo.index();
-
-        // 1. Get the CURRENT vertex position (after skinning)
-        MPoint skinnedPos = itGeo.position();
-        MPoint avgPos(1, 1, 1);
-        skinnedPos += avgPos;
-       // itGeo.setPosition(avgPos);
-        break;
-    }
-    //g_deltamushCache->move();
-
-
-
     return MS::kSuccess;
 }

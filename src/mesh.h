@@ -27,6 +27,8 @@ public:
     void setVertices(const MPointArray& points);
     void setNormals(const MFloatVectorArray& normals);
     
+    void addcolor(MColorArray colors);
+
     void recalculateNormals();
 
     std::set<int> getConnectedVertices(int index);

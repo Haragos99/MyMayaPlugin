@@ -3,17 +3,7 @@
 
 MCallbackIdArray MyPluginCmd::g_callbackIds;
 std::shared_ptr<DeltaMush> MyPluginCmd::deltamush;
-void MyPluginCmd::onAttrChanged(MNodeMessage::AttributeMessage msg,
-    MPlug& plug,
-    MPlug& otherPlug,
-    void* clientData)
-{
 
-      MGlobal::displayInfo("Translation changed: " );
-    //  deltamush->CalculateDeformation();
-      //deltamush->CalculateDeformation();
-      //deltamush->move();
-}
 
 MStatus MyPluginCmd::smoothMesh(MObject& meshObj, int iterations)
 {
