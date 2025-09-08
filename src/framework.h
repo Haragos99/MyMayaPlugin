@@ -4,7 +4,6 @@
 // Windows Header Files
 #include <windows.h>
 #include <vector>
-
 #include <maya/MGlobal.h>
 #include <maya/MPxCommand.h>
 #include <maya/MFnMesh.h>
@@ -27,3 +26,8 @@
 #include <maya/MNodeMessage.h>
 #include <maya/MPlug.h>
 #include <Eigen/Core>
+#include <maya/MFnMeshData.h>
+#include <maya/MPxDeformerNode.h>
+#include <maya/MItGeometry.h>
+#include <maya/MObjectHandle.h>
+#include <maya/MUserData.h>

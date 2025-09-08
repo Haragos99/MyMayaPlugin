@@ -50,6 +50,7 @@ add_library(MyMayaPlugin SHARED
     src/deltamush.cpp
     src/deltamushnode.cpp
 )
+target_compile_definitions(MyMayaPlugin PRIVATE NOMINMAX)
 
 # If you want to include headers in IDE:
 target_sources(MyMayaPlugin PRIVATE
@@ -58,6 +59,7 @@ target_sources(MyMayaPlugin PRIVATE
     src/mesh.h
     src/plugin.h
     src/deltamushnode.h
+    src/debugdraweroverride.h
 )
 
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
