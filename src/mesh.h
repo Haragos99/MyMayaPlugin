@@ -57,6 +57,8 @@ private:
     MVector computePolyNormal(std::vector<MPoint>& polyVerts, int count);
     void calcVerticesNormal(std::vector<int>& polyIndices, MVector faceNormal, int count);
     void initConnected();
+    void initFaces();
+    void initEdges();
     MDagPath  m_dagPath;
     MFnMesh m_fnMesh;
     MPointArray m_vertices;
@@ -66,5 +68,6 @@ private:
     MIntArray m_verticesCounts; //The number of vertices for each polygon.
     MIntArray m_verticesIndices; //The indices of all vertices in the mesh
     std::vector<std::set<int>> connected;
-
+    std::unordered_map<int, MIntArray> faceToVerts;
+    std::unordered_map<int, std::pair<int,int>> edgeToVerts;
 };

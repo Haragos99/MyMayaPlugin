@@ -1,6 +1,8 @@
 #include "framework.h"
 #include "mesh.h"
 #include <maya/MString.h>
+#include <maya/MFnLambertShader.h>
+#include <maya/MFnSet.h>
 
 MeshHandler::MeshHandler(const MDagPath& dagpath) : m_dagPath(dagpath), m_fnMesh(dagpath)
 {
@@ -8,6 +10,8 @@ MeshHandler::MeshHandler(const MDagPath& dagpath) : m_dagPath(dagpath), m_fnMesh
     m_fnMesh.getVertexNormals(false,m_normals);
     m_fnMesh.getVertices(m_verticesCounts, m_verticesIndices);
     initConnected();
+    initFaces();
+    initEdges();
 }
 
 MeshHandler::MeshHandler(const MeshHandler& other)
@@ -19,6 +23,8 @@ MeshHandler::MeshHandler(const MeshHandler& other)
     m_fnMesh(other.m_dagPath) // reinitialize from copied dagPath
 {
     initConnected();
+    initFaces();
+    initEdges();
 }
 
 
@@ -26,8 +32,12 @@ void MeshHandler::addcolor(MColorArray colors)
 {
     // TODO: It kills maya
     MColor color = MColor(1);
-    m_fnMesh.setVertexColor(color, 0);
-    m_fnMesh.setFaceColor(color, 0);
+    //m_fnMesh.setVertexColor(color, 0);
+    //m_fnMesh.setFaceColor(color, 0);
+    MStatus status;
+     // Create Lambert shader
+   
+
 }
 
 MeshHandler::MeshHandler(const MObject& mesh) : m_fnMesh (mesh)
@@ -42,8 +52,8 @@ MeshHandler::MeshHandler(const MObject& mesh) : m_fnMesh (mesh)
     int se = m_verticesCounts.length();
     int te = m_verticesIndices.length();
     initConnected();
-
-
+    initFaces();
+    initEdges();
 }
 
 std::set<int> MeshHandler::getConnectedVertices(int index)
@@ -70,6 +80,38 @@ void MeshHandler::initConnected()
         indexOffset += count;
     }
 }
+
+
+
+
+void MeshHandler::initFaces()
+{
+    MStatus status;
+    auto polyIt = getPolygonIterator(&status);
+
+    for (; !polyIt->isDone(); polyIt->next()) 
+    {
+        int fIdx = polyIt->index(&status);
+        MIntArray faceVerts;
+        polyIt->getVertices(faceVerts);
+        faceToVerts[fIdx] = faceVerts;
+    }
+}
+void MeshHandler::initEdges()
+{
+    MStatus status;
+    auto edgeIt = getEdgeIterator(&status);
+    for (; !edgeIt->isDone(); edgeIt->next()) 
+    {
+        int edgeIndex = edgeIt->index(&status);
+        int v0 = edgeIt->index(0, &status);
+        int v1 = edgeIt->index(1, &status);
+        edgeToVerts[edgeIndex] = { v0 ,v1 };
+    }
+}
+
+
+
 void MeshHandler::resetNormals()
 {
     m_normals.setLength(m_vertices.length());
@@ -228,7 +270,8 @@ void MeshHandler::info()
     msg += " | VertexIndices: "; msg += (int)m_verticesIndices.length();
     msg += " | Binormals: "; msg += (int)m_binormals.length();
     msg += " | Tangents: "; msg += (int)m_tangents.length();
-
+    msg += " | Faces: "; msg += (int)faceToVerts.size();
+    msg += " | Edges: "; msg += (int)edgeToVerts.size();
     MGlobal::displayInfo(msg);
 }
 
