@@ -14,4 +14,9 @@ public:
 
     static MTypeId id;
     static  std::shared_ptr<DeltaMush> g_deltamushCache;
+    void postConstructor()
+    {
+        MPxDeformerNode::setDeformationDetails(MPxDeformerNode::kDeformsColors);
+    }
+
 };

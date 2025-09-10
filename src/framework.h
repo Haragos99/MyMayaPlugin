@@ -31,3 +31,6 @@
 #include <maya/MItGeometry.h>
 #include <maya/MObjectHandle.h>
 #include <maya/MUserData.h>
+#include <maya/MUIDrawManager.h>
+#include <maya/MDrawContext.h>
+#include <maya/MPxDrawOverride.h>

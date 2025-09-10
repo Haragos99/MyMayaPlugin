@@ -11,6 +11,7 @@ public:
 	void CalculateDeformation();
 	void move();
 	void test(MPointArray points);
+	void improvedDM(MPointArray points);
 private:
 	int smoothIterion;
 	MeshHandler m_mesh;
