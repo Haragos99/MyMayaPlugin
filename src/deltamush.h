@@ -12,6 +12,7 @@ public:
 	void move();
 	void test(MPointArray points);
 private:
+	int smoothIterion;
 	MeshHandler m_mesh;
 	std::vector<MPoint> deltas;
 	MMatrix initMatrix(MPoint point, MVector normal, MVector tangent, MVector bitangent);

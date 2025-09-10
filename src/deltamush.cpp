@@ -5,7 +5,7 @@
 
 DeltaMush::DeltaMush(MDagPath& dagPath) : m_mesh(dagPath)
 {
-
+	smoothIterion = 20;
 }
 
 
@@ -48,7 +48,7 @@ MeshHandler DeltaMush::smoothMesh(MeshHandler mesh,int iterations)
 void DeltaMush::CalculateDelta()
 {
 	deltas.clear();
-	auto smooth = smoothMesh(m_mesh,10);
+	auto smooth = smoothMesh(m_mesh, smoothIterion);
 	smooth.recalculateNormals();
 	smooth.info();
 
@@ -106,7 +106,7 @@ MMatrix DeltaMush::initMatrix(MPoint point, MVector normal, MVector tangent, MVe
 
 void DeltaMush::CalculateDeformation()
 {
-	auto smooth = smoothMesh(m_mesh, 10);
+	auto smooth = smoothMesh(m_mesh, smoothIterion);
 	smooth.recalculateNormals();
 
 	MStatus status;	
