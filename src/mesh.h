@@ -46,7 +46,7 @@ public:
     MPoint getNextPoint(int index);
     void info();
     MeshHandler createCopy();
-
+    void setMatrix(int idx, const MMatrix& C);
     // Utility Methods
     void updateMesh(); // Apply changes to the mesh
     ~MeshHandler(){}
@@ -70,4 +70,5 @@ private:
     std::vector<std::set<int>> connected;
     std::unordered_map<int, MIntArray> faceToVerts;
     std::unordered_map<int, std::pair<int,int>> edgeToVerts;
+    std::vector<MMatrix> matrcesC;// refactor maybe
 };

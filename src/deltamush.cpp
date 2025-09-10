@@ -1,5 +1,5 @@
 #include "deltamush.h"
-
+#include "collison.h"
 
 
 
@@ -136,6 +136,7 @@ void DeltaMush::CalculateDeformation()
 
 		// Construct projection matrix C
 		MMatrix C = initMatrix(point, normal, tangent, bitangent);
+		m_mesh.setMatrix(vertIndex, C);
 		MPoint defomedpoint = C * deltas[vertIndex];
 		deformedPoints.append(defomedpoint);
 	}
@@ -160,8 +161,18 @@ void DeltaMush::move()
 void DeltaMush::test(MPointArray points)
 {
 	MColorArray colors;
-	colors.setLength(points.length());
-	//m_mesh.addcolor();
+	colors.setLength(points.length());;
+	m_mesh.addcolor(colors);
 	m_mesh.setVertices(points);
 	CalculateDeformation();
+}
+
+
+void DeltaMush::improvedDM(MPointArray points)
+{
+	m_mesh.setVertices(points);
+	Collison collison;
+
+
+
 }

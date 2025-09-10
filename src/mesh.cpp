@@ -12,6 +12,7 @@ MeshHandler::MeshHandler(const MDagPath& dagpath) : m_dagPath(dagpath), m_fnMesh
     initConnected();
     initFaces();
     initEdges();
+    matrcesC.resize(m_vertices.length());
 }
 
 MeshHandler::MeshHandler(const MeshHandler& other)
@@ -25,6 +26,7 @@ MeshHandler::MeshHandler(const MeshHandler& other)
     initConnected();
     initFaces();
     initEdges();
+    matrcesC.resize(m_vertices.length());
 }
 
 
@@ -54,6 +56,7 @@ MeshHandler::MeshHandler(const MObject& mesh) : m_fnMesh (mesh)
     initConnected();
     initFaces();
     initEdges();
+    matrcesC.resize(m_vertices.length());
 }
 
 std::set<int> MeshHandler::getConnectedVertices(int index)
@@ -109,7 +112,10 @@ void MeshHandler::initEdges()
         edgeToVerts[edgeIndex] = { v0 ,v1 };
     }
 }
-
+void MeshHandler::setMatrix(int idx, const MMatrix& C)
+{
+    matrcesC[idx] = C;
+}
 
 
 void MeshHandler::resetNormals()
