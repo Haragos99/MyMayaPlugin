@@ -1,4 +1,3 @@
-// dllmain.cpp : Defines the entry point for the DLL application.
 #include "plugin.h"
 #include "deltamushnode.h"
 #include "debugdraweroverride.h"

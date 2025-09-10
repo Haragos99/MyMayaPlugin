@@ -1,6 +1,7 @@
-#include "plugin.h"
+﻿#include "plugin.h"
 #include "deltamushnode.h"
-
+#include <maya/MFnLambertShader.h>
+#include <maya/MFnSet.h>
 MCallbackIdArray MyPluginCmd::g_callbackIds;
 std::shared_ptr<DeltaMush> MyPluginCmd::deltamush;
 
@@ -70,85 +71,34 @@ MStatus MyPluginCmd::doIt(const MArgList&)
         MGlobal::displayError("No object selected.");
         return MS::kFailure;
     }
-   // selection.add("pCube1");  // pCube1 is the transform, pCubeShape1 is the shape
 
-    /*
-    selection.add("joint1");
-    selection.add("joint2");
-    selection.add("joint3");
+    MStatus status;
+    MString nodeType("deltaMushNode");
+    MFnDependencyNode fnDep;
+    MObject node = fnDep.create(nodeType, &status);
+    MDagPath dagPath;
+    selection.getDagPath(0, dagPath);  // Get first selected item
+    MGlobal::displayInfo("Add mesh for: " + dagPath.fullPathName());
+    MItSelectionList iter(selection, MFn::kMesh);
+    MObject meshObj;
+    iter.getDependNode(meshObj);
 
-
-
-
-    MObject node;
-    MCallbackId callbackId;
-    for (int i = 1; i < selection.length(); ++i)
+    if (meshObj.isNull())
     {
+        MGlobal::displayError("No mesh found in selection.");
+        return MS::kFailure;
+    }      
+      
+    deltamush = std::make_shared<DeltaMush>(dagPath);
+    deltamush->CalculateDelta();
+    deltamush->CalculateDeformation();
+    DeltaMushNode::g_deltamushCache = deltamush;
+    MString cmd;
+    cmd.format("deformer -type \"^1s\" ^2s;", nodeType, dagPath.fullPathName());
+    MGlobal::executeCommand(cmd);
 
-        selection.getDependNode(i, node);
-        callbackId = MNodeMessage::addAttributeChangedCallback(
-            node,
-            onAttrChanged,
-            nullptr
-        );
-        g_callbackIds.append(callbackId);
-        MFnDependencyNode fn(node);
-        MGlobal::displayInfo("Add callback for: " + fn.name());
-        
-    }
-    */
-    /*
-        if (!transformNode.isNull())
-        {
-
-            MStatus status;
-            //MCallbackId id = MDagMessage::addWorldMatrixModifiedCallback(node, onTransformChanged, nullptr, &status);
-            MCallbackId id = MNodeMessage::addAttributeChangedCallback(
-                transformNode,
-                onAttrChanged,
-                nullptr);
-            if (status != MS::kSuccess)
-            {
-                MGlobal::displayError("Failed to add callback");
-            }
-            else
-            {
-                g_callbackIds.append(id);
-                MFnDependencyNode fn(transformNode);
-                MGlobal::displayInfo("Add callback for: " + fn.name());
-            }
-
-        }
-        */
-        MStatus status;
-        MString nodeType("deltaMushNode");
-        MFnDependencyNode fnDep;
-        MObject node = fnDep.create(nodeType, &status);
-        MDagPath dagPath;
-        selection.getDagPath(0, dagPath);  // Get first selected item
-        MGlobal::displayInfo("Add mesh for: " + dagPath.fullPathName());
-        MItSelectionList iter(selection, MFn::kMesh);
-        MObject meshObj;
-        iter.getDependNode(meshObj);
-
-        if (meshObj.isNull())
-        {
-            MGlobal::displayError("No mesh found in selection.");
-            return MS::kFailure;
-        }
-
-        //smoothMesh(meshObj, 10);
-
-        deltamush = std::make_shared<DeltaMush>(dagPath);
-        deltamush->CalculateDelta();
-        deltamush->CalculateDeformation();
-        DeltaMushNode::g_deltamushCache = deltamush;
-        MString cmd;
-        cmd.format("deformer -type \"^1s\" ^2s;", nodeType, dagPath.fullPathName());
-        MGlobal::executeCommand(cmd);
-
-        MGlobal::displayInfo("Mesh modified successfully.");
-        return MStatus::kSuccess;
+    MGlobal::displayInfo("Mesh modified successfully.");
+    return MStatus::kSuccess;
 }
 
 
