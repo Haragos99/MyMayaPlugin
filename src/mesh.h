@@ -22,6 +22,10 @@ public:
     const MFloatVectorArray& getNormals() const;
     const MIntArray& getVerticesCounts() const;
     const MIntArray& getVerticesIndices() const;
+    const std::unordered_map<int, MIntArray>& getFacesIndices() const;
+    const std::unordered_map<int, std::pair<int, int>>& getEdgesIndices() const;
+
+
 
     // Modifiers
     void setVertices(const MPointArray& points);
@@ -38,6 +42,13 @@ public:
     std::shared_ptr<MItMeshVertex> getVertexIterator(MStatus* status ) const;
     std::shared_ptr<MItMeshPolygon> getPolygonIterator(MStatus* status) const;
     std::shared_ptr<MItMeshEdge> getEdgeIterator(MStatus* status) const;
+
+
+    MPoint getPoint(int index);
+
+    void setPoint(int index, MPoint newPoint);
+
+    MMatrix getMatrixC(int vertexIdx);
 
     void resetNormals();
 
@@ -67,8 +78,8 @@ private:
     MFloatVectorArray m_tangents;
     MIntArray m_verticesCounts; //The number of vertices for each polygon.
     MIntArray m_verticesIndices; //The indices of all vertices in the mesh
-    std::vector<std::set<int>> connected;
-    std::unordered_map<int, MIntArray> faceToVerts;
-    std::unordered_map<int, std::pair<int,int>> edgeToVerts;
-    std::vector<MMatrix> matrcesC;// refactor maybe
+    std::vector<std::set<int>> m_connected;
+    std::unordered_map<int, MIntArray> m_faceToVerts;
+    std::unordered_map<int, std::pair<int,int>> m_edgeToVerts;
+    std::vector<MMatrix> m_matrcesC;// refactor maybe
 };

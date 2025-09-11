@@ -40,7 +40,7 @@ private:
 		return Eigen::Vector3f(v[0], v[1], v[2]);
 	}
 	void setRestToi(float newtoi);
-	void setMeshTio(int v, MeshHandler mesh);
+	void setMeshTio(int vertexIdx, MeshHandler& mesh);
 	void setSmalest(int v, int f, std::pair<int,int> edegs, MeshHandler mesh);
 	void restCollied();
 	std::vector<Delta> deltas;
