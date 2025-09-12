@@ -1,7 +1,7 @@
 #include "collison.h"
 #include "tight_inclusion/ccd.hpp"
 
-Collison::Collison() {
+Collison::Collison(std::vector<MPoint> v) {
     err = Eigen::Vector3f(-1, -1, -1);  // Error bounds
     tmax = 1.0;
     tmaxiter = 1e7;
@@ -9,6 +9,7 @@ Collison::Collison() {
     mc = 1e-6;
     smallestTio = 1.0f;
     alfa = 0;
+    init(v);
 }
 
 
@@ -37,9 +38,9 @@ bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth)
     bool isanycollied = false;
 
 
-    int vindex;
-    int findex;
-
+    int vindex = -1;
+    int findex = -1;
+    int eindex = -1;
 
     int pointsCount = mesh.getVertices().length();
     auto& faceIndices = mesh.getFacesIndices();
@@ -86,10 +87,7 @@ bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth)
             );
             if (iscollied) 
             {
-                //mesh.data(v).color = Vec(1, 0, 0);
-                //deltas[v.idx()].toi = toi;
                 tois.push_back(toi);
-                //verteces.insert(v);
                 if (toi < smallestTio)
                 {
                     smallestTio = toi;
@@ -101,6 +99,20 @@ bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth)
             }
         }
     }
+
+
+    alfa = smallestTio;
+    prevTio = smallestTio;
+
+    setSmalest(vindex, findex, eindex, mesh);
+    setRestToi(alfa);
+    for (int vertexIdx = 0; vertexIdx < pointsCount; ++vertexIdx)
+    {
+        setMeshTio(vertexIdx, mesh);
+    }
+
+
+
 
     return isanycollied;
 }
@@ -125,8 +137,18 @@ void Collison::setMeshTio(int vertexIdx, MeshHandler& mesh)
 
 }
 
-void Collison::setSmalest(int v, int f, std::pair<int, int> edegs, MeshHandler mesh)
+void Collison::setSmalest(int vertexIdx, int f, int edegs, MeshHandler& mesh)
 {
+    deltas[vertexIdx].toi = alfa;
+    deltas[vertexIdx].isCollied = true;
+    setMeshTio(vertexIdx, mesh);
+    auto& facePoints = mesh.getFacesIndices().at(f);
+    for (int pointIdx : facePoints)
+    {
+        deltas[pointIdx].toi = alfa;
+        deltas[pointIdx].isCollied = true;
+        setMeshTio(pointIdx, mesh);
+    }
 
 }
 
