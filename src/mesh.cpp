@@ -12,7 +12,7 @@ MeshHandler::MeshHandler(const MDagPath& dagpath) : m_dagPath(dagpath), m_fnMesh
     initConnected();
     initFaces();
     initEdges();
-    matrcesC.resize(m_vertices.length());
+    m_matrcesC.resize(m_vertices.length());
 }
 
 MeshHandler::MeshHandler(const MeshHandler& other)
@@ -26,7 +26,7 @@ MeshHandler::MeshHandler(const MeshHandler& other)
     initConnected();
     initFaces();
     initEdges();
-    matrcesC.resize(m_vertices.length());
+    m_matrcesC.resize(m_vertices.length());
 }
 
 
@@ -56,18 +56,18 @@ MeshHandler::MeshHandler(const MObject& mesh) : m_fnMesh (mesh)
     initConnected();
     initFaces();
     initEdges();
-    matrcesC.resize(m_vertices.length());
+    m_matrcesC.resize(m_vertices.length());
 }
 
 std::set<int> MeshHandler::getConnectedVertices(int index)
 {
-    return connected[index];
+    return m_connected[index];
 }
 
 
 void MeshHandler::initConnected()
 {
-    connected.resize(m_fnMesh.numVertices());
+    m_connected.resize(m_fnMesh.numVertices());
 
     int indexOffset = 0;
     for (unsigned int f = 0; f < m_verticesCounts.length(); ++f)
@@ -77,8 +77,8 @@ void MeshHandler::initConnected()
         {
             int v0 = m_verticesIndices[indexOffset + i];
             int v1 = m_verticesIndices[indexOffset + (i + 1) % count];
-            connected[v0].insert(v1);
-            connected[v1].insert(v0);
+            m_connected[v0].insert(v1);
+            m_connected[v1].insert(v0);
         }
         indexOffset += count;
     }
@@ -97,7 +97,7 @@ void MeshHandler::initFaces()
         int fIdx = polyIt->index(&status);
         MIntArray faceVerts;
         polyIt->getVertices(faceVerts);
-        faceToVerts[fIdx] = faceVerts;
+        m_faceToVerts[fIdx] = faceVerts;
     }
 }
 void MeshHandler::initEdges()
@@ -109,12 +109,12 @@ void MeshHandler::initEdges()
         int edgeIndex = edgeIt->index(&status);
         int v0 = edgeIt->index(0, &status);
         int v1 = edgeIt->index(1, &status);
-        edgeToVerts[edgeIndex] = { v0 ,v1 };
+        m_edgeToVerts[edgeIndex] = { v0 ,v1 };
     }
 }
 void MeshHandler::setMatrix(int idx, const MMatrix& C)
 {
-    matrcesC[idx] = C;
+    m_matrcesC[idx] = C;
 }
 
 
@@ -257,6 +257,32 @@ const MIntArray& MeshHandler::getVerticesIndices() const
 }
 
 
+const std::unordered_map<int, MIntArray>& MeshHandler::getFacesIndices() const
+{
+    return m_faceToVerts;
+}
+
+const std::unordered_map<int, std::pair<int, int>>& MeshHandler::getEdgesIndices() const
+{
+    return m_edgeToVerts;
+}
+
+MPoint MeshHandler::getPoint(int index)
+{
+    return m_vertices[index];
+}
+
+
+void MeshHandler::setPoint(int index, MPoint newPoint)
+{
+    m_vertices[index] = newPoint;
+}
+
+MMatrix MeshHandler::getMatrixC(int vertexIdx)
+{
+    return m_matrcesC[vertexIdx];
+}
+
 void MeshHandler::setVertices(const MPointArray& points) 
 {
     m_vertices = points;
@@ -276,8 +302,8 @@ void MeshHandler::info()
     msg += " | VertexIndices: "; msg += (int)m_verticesIndices.length();
     msg += " | Binormals: "; msg += (int)m_binormals.length();
     msg += " | Tangents: "; msg += (int)m_tangents.length();
-    msg += " | Faces: "; msg += (int)faceToVerts.size();
-    msg += " | Edges: "; msg += (int)edgeToVerts.size();
+    msg += " | Faces: "; msg += (int)m_faceToVerts.size();
+    msg += " | Edges: "; msg += (int)m_edgeToVerts.size();
     MGlobal::displayInfo(msg);
 }
 

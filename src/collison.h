@@ -8,7 +8,7 @@
 struct Delta {
 
 public:
-	MPoint getDeltaPoint(MMatrix& C) {
+	MPoint getDeltaPoint(MMatrix&& C) {
 		MPoint v = deltavector;
 		v[0] *= toi;
 		v[1] *= toi;
@@ -26,7 +26,7 @@ private:
 class Collison {
 
 public:
-	Collison();
+	Collison(std::vector<MPoint> v);
 	void init(std::vector<MPoint> v);
 
 	bool collisondetec(MeshHandler& mesh, MeshHandler& smooth);
@@ -40,8 +40,8 @@ private:
 		return Eigen::Vector3f(v[0], v[1], v[2]);
 	}
 	void setRestToi(float newtoi);
-	void setMeshTio(int v, MeshHandler mesh);
-	void setSmalest(int v, int f, std::pair<int,int> edegs, MeshHandler mesh);
+	void setMeshTio(int vertexIdx, MeshHandler& mesh);
+	void setSmalest(int vvertexIdx, int f, int edegs, MeshHandler& mesh);
 	void restCollied();
 	std::vector<Delta> deltas;
 	Eigen::Vector3f err = Eigen::Vector3f(-1, -1, -1);  // Error bounds

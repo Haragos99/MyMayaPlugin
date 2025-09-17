@@ -171,8 +171,15 @@ void DeltaMush::test(MPointArray points)
 void DeltaMush::improvedDM(MPointArray points)
 {
 	m_mesh.setVertices(points);
-	Collison collison;
-
-
-
+	CalculateDeformation();
+	Collison collison = Collison(deltas);
+	auto smooth = smoothMesh(m_mesh, smoothIterion);
+	smooth.recalculateNormals();
+	while (collison.collisondetec(m_mesh, smooth))
+	{
+		CalculateDeformation();
+		float alfa = collison.getAlfa();
+		int percent = alfa * 100;
+		collison.setAlfa(0);
+	}
 }
