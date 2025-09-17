@@ -1,17 +1,20 @@
-#pragma once
-#define NOMINMAX
-
+#include <maya/MPxDrawOverride.h>
+#include <maya/MUserData.h>
+#include <maya/MGlobal.h>
 #include <maya/MPxLocatorNode.h>
-#include <maya/MDrawRegistry.h>
-#include <maya/M3dView.h>
+using namespace MHWRender;
+
+
 
 class MyLocator : public MPxLocatorNode
 {
 public:
     static MTypeId id;
+
     static void* creator() { return new MyLocator(); }
     static MStatus initialize() { return MS::kSuccess; }
 
+    // Only used in Legacy Viewport (optional)
     void draw(M3dView& view,
         const MDagPath& path,
         M3dView::DisplayStyle style,
@@ -19,16 +22,16 @@ public:
     {
         view.beginGL();
         glPushAttrib(GL_CURRENT_BIT);
-        MGlobal::displayError("No son.");
-        // Draw a point
-        glColor3f(1.0f, 0.0f, 0.0f);  // red
+
+        // Red point
+        glColor3f(1.0f, 0.0f, 0.0f);
         glPointSize(8.0f);
         glBegin(GL_POINTS);
         glVertex3f(0.0f, 0.0f, 0.0f);
         glEnd();
-
-        // Draw a line
-        glColor3f(0.0f, 1.0f, 0.0f);  // green
+        MGlobal::displayInfo("A cx It worked");
+        // Green line
+        glColor3f(0.0f, 1.0f, 0.0f);
         glBegin(GL_LINES);
         glVertex3f(0.0f, 0.0f, 0.0f);
         glVertex3f(1.0f, 1.0f, 0.0f);
@@ -38,4 +41,65 @@ public:
         view.endGL();
     }
 };
+
 MTypeId MyLocator::id(0x001226C1);
+
+
+
+
+class MyLocatorDrawOverride : public MPxDrawOverride
+{
+public:
+    static MPxDrawOverride* Creator(const MObject& obj)
+    {
+        return new MyLocatorDrawOverride(obj);
+    }
+
+    MyLocatorDrawOverride(const MObject& obj)
+        : MPxDrawOverride(obj, nullptr, /* isAlwaysDirty */ false) {
+    }
+
+    ~MyLocatorDrawOverride() override {}
+
+
+    bool traceCallSequence() const override {
+        return true; // Return true to enable the debug logging
+    }
+    MHWRender::DrawAPI supportedDrawAPIs() const override
+    {
+        return kAllDevices; // OpenGL + DX
+    }
+
+    bool hasUIDrawables() const override { return true; }
+
+    void addUIDrawables(
+        const MDagPath& path,
+        MHWRender::MUIDrawManager& drawManager,
+        const MHWRender::MFrameContext& frameContext,
+        const MUserData* data) override
+    {
+        drawManager.beginDrawable();
+        MGlobal::displayInfo("SSSSSIt worked");
+        // Draw red point
+        drawManager.setColor(MColor(1.0f, 0.0f, 0.0f));
+        drawManager.point(MPoint(0.0, 0.0, 0.0));
+
+        // Draw green line
+        drawManager.setColor(MColor(0.0f, 1.0f, 0.0f));
+        drawManager.line(MPoint(0.0, 0.0, 0.0), MPoint(1.0, 1.0, 0.0));
+
+        drawManager.endDrawable();
+    }
+
+    MUserData* prepareForDraw(
+        const MDagPath& objPath,
+        const MDagPath& cameraPath,
+        const MHWRender::MFrameContext& frameContext,
+        MUserData* oldData) override
+    {
+        // If you want to cache per-frame draw data, do it here.
+        // For now, just reuse oldData if it exists.
+        return oldData;
+    }
+
+};
