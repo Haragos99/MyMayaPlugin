@@ -2,6 +2,7 @@
 #include "deltamushnode.h"
 #include <maya/MFnLambertShader.h>
 #include <maya/MFnSet.h>
+#include "debugdraweroverride.h"
 MCallbackIdArray MyPluginCmd::g_callbackIds;
 std::shared_ptr<DeltaMush> MyPluginCmd::deltamush;
 
@@ -88,11 +89,14 @@ MStatus MyPluginCmd::doIt(const MArgList&)
         MGlobal::displayError("No mesh found in selection.");
         return MS::kFailure;
     }      
-      
+    MString cmd1 = "polyTriangulate " + dagPath.fullPathName();
+    //MGlobal::executeCommand(cmd1);
     deltamush = std::make_shared<DeltaMush>(dagPath);
     deltamush->CalculateDelta();
     deltamush->CalculateDeformation();
+
     DeltaMushNode::g_deltamushCache = deltamush;
+    MyLocatorDrawOverride::deltamushCache = deltamush;
     MString cmd;
     cmd.format("deformer -type \"^1s\" ^2s;", nodeType, dagPath.fullPathName());
     MGlobal::executeCommand(cmd);
