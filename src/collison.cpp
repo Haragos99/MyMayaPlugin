@@ -28,6 +28,7 @@ void Collison::init(std::vector<MPoint> v)
 
 bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth)
 {
+
     smallestTio = 1;
     tois.clear();
     Eigen::Vector3f v_t0, v_t1;
@@ -41,6 +42,7 @@ bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth)
     int vindex = -1;
     int findex = -1;
     int eindex = -1;
+    int eindex2 = -1;
 
     int pointsCount = mesh.getVertices().length();
     auto& faceIndices = mesh.getFacesIndices();
@@ -100,18 +102,82 @@ bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth)
         }
     }
 
+    
+    for (auto edge : edgeIndices)
+    {
+		auto edgesidx = edge.second;
+        if (deltas[edgesidx.first].isCollied || deltas[edgesidx.second].isCollied)
+        {
+            continue;
+        }
 
+        // Convert OpenMesh vertices to Eigen vectors for t1
+        Eigen::Vector3f ea0_t1 = toEigenVec(mesh.getPoint(edgesidx.first));
+        Eigen::Vector3f ea1_t1 = toEigenVec(mesh.getPoint(edgesidx.second));
+
+        // Assume edge 2 moves (displacement example for t0)
+        Eigen::Vector3f ea0_t0 = toEigenVec(smooth.getPoint(edgesidx.first));
+        Eigen::Vector3f ea1_t0 = toEigenVec(smooth.getPoint(edgesidx.second));
+        for (auto edge2 : edgeIndices)
+        {
+            auto edgesidx2 = edge2.second;
+
+            if (edgesidx.first == edgesidx2.first || edgesidx.second == edgesidx2.second || edgesidx.second == edgesidx2.first || edgesidx.first == edgesidx2.second)
+            {
+                continue;
+            }
+
+            // Convert OpenMesh vertices to Eigen vectors for t1
+            Eigen::Vector3f eb0_t1 = toEigenVec(mesh.getPoint(edgesidx2.first));
+            Eigen::Vector3f eb1_t1 = toEigenVec(mesh.getPoint(edgesidx2.second));
+
+            // Assume edge 2 moves (displacement example for t0)
+            Eigen::Vector3f eb0_t0 = toEigenVec(smooth.getPoint(edgesidx2.first));
+            Eigen::Vector3f eb1_t0 = toEigenVec(smooth.getPoint(edgesidx2.second));
+            // Perform edge-edge collision detection
+            bool is_colliding = ticcd::edgeEdgeCCD(
+                ea0_t0, ea1_t0, eb0_t0, eb1_t0,  // Edges at time t0
+                ea0_t1, ea1_t1, eb0_t1, eb1_t1,  // Edges at time t1
+                err,                             // Error bounds
+                mc,                              // Minimum separation
+                toi,                             // Time of impact (output)
+                tolerance,                       // Solving precision
+                tmax,                           // Time interval upper bound (0 <= t_max <= 1)
+                tmaxiter,                         // Maximum iterations
+                outtolerance,                // Output precision under max_itr
+                true                             // Refine for zero toi
+            );
+
+            if (is_colliding) {
+
+                if (toi < smallestTio)
+                {
+                    smallestTio = toi;
+                    eindex = edge.first;
+                    eindex2 = edge2.first;
+                }
+                isanycollied = true;
+
+
+            }
+
+
+        }
+
+
+    }
+
+    
     alfa = smallestTio;
     prevTio = smallestTio;
-
-    setSmalest(vindex, findex, eindex, mesh);
+    setSmalest(vindex, findex, eindex, eindex2, mesh);
     setRestToi(alfa);
     for (int vertexIdx = 0; vertexIdx < pointsCount; ++vertexIdx)
     {
         setMeshTio(vertexIdx, mesh);
     }
-
-
+    MGlobal::displayInfo(std::to_string(alfa).c_str());
+    MGlobal::displayInfo(std::to_string(pointsCount).c_str());
 
 
     return isanycollied;
@@ -137,18 +203,45 @@ void Collison::setMeshTio(int vertexIdx, MeshHandler& mesh)
 
 }
 
-void Collison::setSmalest(int vertexIdx, int f, int edegs, MeshHandler& mesh)
+void Collison::setSmalest(int vertexIdx, int f, int edegs, int edegs2,MeshHandler& mesh)
 {
-    deltas[vertexIdx].toi = alfa;
-    deltas[vertexIdx].isCollied = true;
-    setMeshTio(vertexIdx, mesh);
-    auto& facePoints = mesh.getFacesIndices().at(f);
-    for (int pointIdx : facePoints)
+    if (vertexIdx != -1)
     {
-        deltas[pointIdx].toi = alfa;
-        deltas[pointIdx].isCollied = true;
-        setMeshTio(pointIdx, mesh);
+        deltas[vertexIdx].toi = alfa;
+        deltas[vertexIdx].isCollied = true;
+        setMeshTio(vertexIdx, mesh);
+        auto& facePoints = mesh.getFacesIndices().at(f);
+        for (int pointIdx : facePoints)
+        {
+            deltas[pointIdx].toi = alfa;
+            deltas[pointIdx].isCollied = true;
+            setMeshTio(pointIdx, mesh);
+        }
     }
+    else
+    {
+        if (edegs != -1)
+        {
+            auto& edgePoints = mesh.getEdgesIndices().at(edegs);
+            deltas[edgePoints.first].toi = alfa;
+            deltas[edgePoints.first].isCollied = true;
+            setMeshTio(edgePoints.first, mesh);
+            deltas[edgePoints.second].toi = alfa;
+            deltas[edgePoints.second].isCollied = true;
+            setMeshTio(edgePoints.second, mesh);
+        }
+        if (edegs2 != -1)
+        {
+            auto& edgePoints = mesh.getEdgesIndices().at(edegs2);
+            deltas[edgePoints.first].toi = alfa;
+            deltas[edgePoints.first].isCollied = true;
+            setMeshTio(edgePoints.first, mesh);
+            deltas[edgePoints.second].toi = alfa;
+            deltas[edgePoints.second].isCollied = true;
+            setMeshTio(edgePoints.second, mesh);
+        }
+	}
+
 
 }
 

@@ -15,7 +15,7 @@ MStatus DeltaMushNode::deform(MDataBlock& data,
     if (g_deltamushCache != nullptr)
     {
         itGeo.allPositions(points);
-        g_deltamushCache->test(points); 
+        g_deltamushCache->improvedDM(points); 
     }
     else
     {

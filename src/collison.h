@@ -41,7 +41,7 @@ private:
 	}
 	void setRestToi(float newtoi);
 	void setMeshTio(int vertexIdx, MeshHandler& mesh);
-	void setSmalest(int vvertexIdx, int f, int edegs, MeshHandler& mesh);
+	void setSmalest(int vvertexIdx, int f, int edegs, int edegs2, MeshHandler& mesh);
 	void restCollied();
 	std::vector<Delta> deltas;
 	Eigen::Vector3f err = Eigen::Vector3f(-1, -1, -1);  // Error bounds
