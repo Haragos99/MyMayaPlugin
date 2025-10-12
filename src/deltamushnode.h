@@ -12,6 +12,7 @@ public:
         const MMatrix& localToWorldMatrix,
         unsigned int geomIndex) override;
     static MObject aEnableFeature; // Boolean attribute handle
+    static MObject aEnableDeltamush; // Boolean attribute handle
     static MObject aSmoothing;       //  float slider
     static MTypeId id;
     // --- Overridden methods ---

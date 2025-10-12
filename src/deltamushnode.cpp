@@ -4,6 +4,7 @@ MTypeId DeltaMushNode::id(0x00123456);
 
 std::shared_ptr<DeltaMush> DeltaMushNode::g_deltamushCache = nullptr;
 MObject DeltaMushNode::aEnableFeature;
+MObject DeltaMushNode::aEnableDeltamush;
 MObject DeltaMushNode::aSmoothing;
 
 // --- Attribute initialization ---
@@ -23,6 +24,22 @@ MStatus DeltaMushNode::initialize()
 
     // Ensure Maya knows the attribute affects the output geometry
     attributeAffects(aEnableFeature, outputGeom);
+
+
+
+
+    //  Create a boolean attribute
+    aEnableDeltamush = nAttr.create("DeltaMush", "dm", MFnNumericData::kBoolean, true);
+    nAttr.setKeyable(true);
+    nAttr.setStorable(true);
+    nAttr.setReadable(true);
+    nAttr.setWritable(true);
+    nAttr.setDefault(true);
+
+    addAttribute(aEnableDeltamush);
+
+    // Ensure Maya knows the attribute affects the output geometry
+    attributeAffects(aEnableDeltamush, outputGeom);
 
 
     // Smoothing (float slider)
@@ -68,27 +85,32 @@ MStatus DeltaMushNode::deform(MDataBlock& data,
     MStatus status;
     bool enableFeature = data.inputValue(aEnableFeature, &status).asBool();
 
+	bool enableDeltamush = data.inputValue(aEnableDeltamush, &status).asBool();
 
     float smoothing = data.inputValue(aSmoothing, &status).asFloat();
     MPointArray points;
-    if (g_deltamushCache != nullptr)
+    if(enableDeltamush)
     {
-		g_deltamushCache->setDeltaMushFactor(smoothing);
-        itGeo.allPositions(points);
-        if (enableFeature)
+        if (g_deltamushCache != nullptr)
         {
-            g_deltamushCache->improvedDM(points);
+
+            g_deltamushCache->setDeltaMushFactor(smoothing);
+            itGeo.allPositions(points);
+            if (enableFeature)
+            {
+                g_deltamushCache->improvedDM(points);
+            }
+            else
+            {
+                g_deltamushCache->test(points);
+            }
+
         }
         else
         {
-            g_deltamushCache->test(points);
-		}
-       
-    }
-    else
-    {
-        MGlobal::displayError("Delta Mush is null"); 
-    }
-    
+            MGlobal::displayError("Delta Mush is null");
+        }
+	}
+   
     return MS::kSuccess;
 }
