@@ -6,6 +6,7 @@
 DeltaMush::DeltaMush(MDagPath& dagPath) : m_mesh(dagPath)
 {
 	smoothIterion = 20;
+	deltaMushFactor = 1.0f;
 }
 
 
@@ -104,10 +105,28 @@ MMatrix DeltaMush::initMatrix(MPoint point, MVector normal, MVector tangent, MVe
 	return M;
 }
 
+
+std::vector<MPoint> DeltaMush::scaleDeltas(std::vector<MPoint> originalDeltas, float smooth)
+{
+	std::to_string(smooth);
+	MGlobal::displayInfo(std::to_string(smooth).c_str());
+
+	for (auto& delta : originalDeltas)
+	{
+		delta[0] *= smooth;
+		delta[1] *= smooth;
+		delta[2] *= smooth;
+	}
+	return originalDeltas;
+}
+
+
 void DeltaMush::CalculateDeformation()
 {
 	auto smooth = smoothMesh(m_mesh, smoothIterion);
 	smooth.recalculateNormals();
+
+	auto newDeltas = scaleDeltas(deltas, deltaMushFactor);
 
 	MStatus status;	
 	auto& smoothPoints = smooth.getVertices();
@@ -137,7 +156,7 @@ void DeltaMush::CalculateDeformation()
 		// Construct projection matrix C
 		MMatrix C = initMatrix(point, normal, tangent, bitangent);
 		m_mesh.setMatrix(vertIndex, C);
-		MPoint defomedpoint = C * deltas[vertIndex];
+		MPoint defomedpoint = C * newDeltas[vertIndex];
 		deformedPoints.append(defomedpoint);
 	}
 	m_mesh.setVertices(deformedPoints);
