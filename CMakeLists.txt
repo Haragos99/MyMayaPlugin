@@ -54,7 +54,7 @@ add_library(MyMayaPlugin SHARED
     src/tight_inclusion/interval.cpp
     src/tight_inclusion/interval_root_finder.cpp
     src/tight_inclusion/logger.cpp
-    src/collison.cpp  "src/debugdraweroverride.cpp")
+    src/collison.cpp  "src/debugdraweroverride.cpp" "src/aabb.h")
 target_compile_definitions(MyMayaPlugin PRIVATE NOMINMAX)
 
 # If you want to include headers in IDE:
