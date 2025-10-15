@@ -42,6 +42,24 @@ void MeshHandler::addcolor(MColorArray colors)
 
 }
 
+void MeshHandler::collectVerticesNearPoint(const MPoint& origin, double threshold)
+{
+    for(int i = 0; i < m_vertices.length(); ++i)
+    {
+		MPoint p = m_vertices[i];
+        if (p.distanceTo(origin) <= threshold)
+        {
+            nearbyVertices.insert(i);
+        }
+    }
+
+
+
+
+
+    MGlobal::displayInfo(MString("Found ") + (int)nearbyVertices.size() + " vertices near point.");
+}
+
 MeshHandler::MeshHandler(const MObject& mesh) : m_fnMesh (mesh)
 {
     m_fnMesh.getVertices(m_verticesCounts, m_verticesIndices);
@@ -216,6 +234,12 @@ MeshHandler& MeshHandler::operator=(const MeshHandler& other) {
         m_normals = other.m_normals;
         m_verticesCounts = other.m_verticesCounts;
         m_verticesIndices = other.m_verticesIndices;
+        m_faceToVerts = other.m_faceToVerts;
+        m_edgeToVerts = other.m_edgeToVerts;
+		m_connected = other.m_connected;
+        m_fnMesh.setObject(m_dagPath);
+		m_matrcesC.resize(m_vertices.length());
+        
 
     }
     return *this;

@@ -14,6 +14,8 @@ public:
     static MObject aEnableFeature; // Boolean attribute handle
     static MObject aEnableDeltamush; // Boolean attribute handle
     static MObject aSmoothing;       //  float slider
+	static MObject aCounter; 	 //  int 
+    static MObject aEnableDebug;
     static MTypeId id;
     // --- Overridden methods ---
     MStatus setDependentsDirty(const MPlug& plugBeingDirtied, MPlugArray& affectedPlugs) override;

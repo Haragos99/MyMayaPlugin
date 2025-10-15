@@ -43,6 +43,8 @@ MeshHandler DeltaMush::smoothMesh(MeshHandler mesh,int iterations)
 		currentPoints = updatedPoints;
 	}
 	mesh.setVertices(currentPoints);
+	MGlobal::displayInfo("sss");
+	m_smooth = mesh;
 	return mesh;
 }
 
@@ -121,6 +123,29 @@ std::vector<MPoint> DeltaMush::scaleDeltas(std::vector<MPoint> originalDeltas, f
 }
 
 
+
+void DeltaMush::debugCCD(int itertion, MPointArray points)
+{
+	m_mesh.setVertices(points);
+	MGlobal::displayInfo("Start Debugg");
+	CalculateDeformation();
+	Collison collison = Collison(deltas);
+	auto smooth = smoothMesh(m_mesh, smoothIterion);
+	smooth.recalculateNormals();
+	int i = 0;
+	while(i < itertion)
+	{
+		MGlobal::displayInfo("Iter");
+		//collison.collisondetec(m_mesh, smooth);
+		//CalculateDeformation();
+		float alfa = collison.getAlfa();
+		int percent = alfa * 100;
+		collison.setAlfa(0);
+		i++;
+	}
+}
+
+
 void DeltaMush::CalculateDeformation()
 {
 	auto smooth = smoothMesh(m_mesh, smoothIterion);
@@ -160,7 +185,7 @@ void DeltaMush::CalculateDeformation()
 		deformedPoints.append(defomedpoint);
 	}
 	m_mesh.setVertices(deformedPoints);
-	m_mesh.updateMesh();
+	//m_mesh.updateMesh();
 }
 
 // Implementation of line drawing using legacy OpenGL
@@ -174,7 +199,7 @@ void DeltaMush::move()
 {
 	auto smooth = smoothMesh(m_mesh, 1);
 	m_mesh = smooth;
-	m_mesh.updateMesh();
+	
 }
 
 void DeltaMush::test(MPointArray points)
@@ -184,6 +209,7 @@ void DeltaMush::test(MPointArray points)
 	m_mesh.addcolor(colors);
 	m_mesh.setVertices(points);
 	CalculateDeformation();
+	m_mesh.updateMesh();
 }
 
 
@@ -193,13 +219,57 @@ void DeltaMush::improvedDM(MPointArray points)
 	MGlobal::displayInfo("Start");
 	CalculateDeformation();
 	Collison collison = Collison(deltas);
-	auto smooth = smoothMesh(m_mesh, smoothIterion);
-	smooth.recalculateNormals();
-	while(collison.collisondetec(m_mesh, smooth));
+	//auto smooth = smoothMesh(m_mesh, smoothIterion);
+	//smooth.recalculateNormals();
+	//it is not working becASE OF THE SMOOTH MAYBE
+	
+	while(collison.collisondetec(m_mesh, m_smooth))
 	{
-		CalculateDeformation();
+		//collison.collisondetec(m_mesh, smooth);
+		CCDDeformation();
 		float alfa = collison.getAlfa();
 		int percent = alfa * 100;
 		collison.setAlfa(0);
 	}
+
+	m_mesh.updateMesh();
+}
+
+
+
+void DeltaMush::CCDDeformation()
+{
+	m_smooth.recalculateNormals();
+	MStatus status;
+	auto& smoothPoints = m_smooth.getVertices();
+	auto& smoothNormals = m_smooth.getNormals();
+	MPointArray deformedPoints;
+	for (int vertIndex = 0; vertIndex < smoothPoints.length(); ++vertIndex)
+	{
+		MPoint point = smoothPoints[vertIndex];
+		// Retrieve vertex normal
+		MVector normal = smoothNormals[vertIndex];
+		normal.normalize();
+
+		int neighborIdx = *m_smooth.getConnectedVertices(vertIndex).begin();
+
+		MPoint neighbor = smoothPoints[neighborIdx];
+
+		MVector edge = neighbor - point;
+
+		// Compute tangent vector 
+		MVector tangent = edge - (edge * normal) * normal;
+		tangent.normalize();
+
+		// Compute bitangent as cross product of normal and tangent
+		MVector bitangent = tangent ^ normal;
+		bitangent.normalize();
+
+		// Construct projection matrix C
+		MMatrix C = initMatrix(point, normal, tangent, bitangent);
+		m_mesh.setMatrix(vertIndex, C);
+		MPoint defomedpoint = C * deltas[vertIndex];
+		deformedPoints.append(defomedpoint);
+	}
+	m_mesh.setVertices(deformedPoints);
 }

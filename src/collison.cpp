@@ -47,7 +47,7 @@ bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth)
     int pointsCount = mesh.getVertices().length();
     auto& faceIndices = mesh.getFacesIndices();
     auto& edgeIndices = mesh.getEdgesIndices();
-
+    
     for (int vertexIdx = 0;  vertexIdx < pointsCount; ++vertexIdx)
     {
         if (deltas[vertexIdx].isCollied)
@@ -160,13 +160,9 @@ bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth)
 
 
             }
-
-
         }
-
-
     }
-
+    
     
     alfa = smallestTio;
     prevTio = smallestTio;
@@ -176,7 +172,8 @@ bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth)
     {
         setMeshTio(vertexIdx, mesh);
     }
-    MGlobal::displayInfo(std::to_string(alfa).c_str());
+	std::string alfastr = "Alfa: " + std::to_string(alfa);
+    MGlobal::displayInfo(alfastr.c_str());
     MGlobal::displayInfo(std::to_string(pointsCount).c_str());
 
 
@@ -205,8 +202,33 @@ void Collison::setMeshTio(int vertexIdx, MeshHandler& mesh)
 
 void Collison::setSmalest(int vertexIdx, int f, int edegs, int edegs2,MeshHandler& mesh)
 {
-    if (vertexIdx != -1)
+    if (edegs != -1)
     {
+
+        auto& edgePoints = mesh.getEdgesIndices().at(edegs);
+        deltas[edgePoints.first].toi = alfa;
+        deltas[edgePoints.first].isCollied = true;
+        setMeshTio(edgePoints.first, mesh);
+        deltas[edgePoints.second].toi = alfa;
+        deltas[edgePoints.second].isCollied = true;
+        setMeshTio(edgePoints.second, mesh);
+
+        auto& edgePoints2 = mesh.getEdgesIndices().at(edegs2);
+        deltas[edgePoints2.first].toi = alfa;
+        deltas[edgePoints2.first].isCollied = true;
+        setMeshTio(edgePoints2.first, mesh);
+        deltas[edgePoints2.second].toi = alfa;
+        deltas[edgePoints2.second].isCollied = true;
+        setMeshTio(edgePoints2.second, mesh);
+
+     
+    }
+    else
+    {
+        if (f == -1 || vertexIdx == -1)
+        {
+            return;
+		}
         deltas[vertexIdx].toi = alfa;
         deltas[vertexIdx].isCollied = true;
         setMeshTio(vertexIdx, mesh);
@@ -216,29 +238,6 @@ void Collison::setSmalest(int vertexIdx, int f, int edegs, int edegs2,MeshHandle
             deltas[pointIdx].toi = alfa;
             deltas[pointIdx].isCollied = true;
             setMeshTio(pointIdx, mesh);
-        }
-    }
-    else
-    {
-        if (edegs != -1)
-        {
-            auto& edgePoints = mesh.getEdgesIndices().at(edegs);
-            deltas[edgePoints.first].toi = alfa;
-            deltas[edgePoints.first].isCollied = true;
-            setMeshTio(edgePoints.first, mesh);
-            deltas[edgePoints.second].toi = alfa;
-            deltas[edgePoints.second].isCollied = true;
-            setMeshTio(edgePoints.second, mesh);
-        }
-        if (edegs2 != -1)
-        {
-            auto& edgePoints = mesh.getEdgesIndices().at(edegs2);
-            deltas[edgePoints.first].toi = alfa;
-            deltas[edgePoints.first].isCollied = true;
-            setMeshTio(edgePoints.first, mesh);
-            deltas[edgePoints.second].toi = alfa;
-            deltas[edgePoints.second].isCollied = true;
-            setMeshTio(edgePoints.second, mesh);
         }
 	}
 

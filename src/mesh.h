@@ -43,6 +43,7 @@ public:
     std::shared_ptr<MItMeshPolygon> getPolygonIterator(MStatus* status) const;
     std::shared_ptr<MItMeshEdge> getEdgeIterator(MStatus* status) const;
 
+    void collectVerticesNearPoint(const MPoint& origin, double threshold = 0.1);
 
     MPoint getPoint(int index);
 
@@ -81,5 +82,6 @@ private:
     std::vector<std::set<int>> m_connected;
     std::unordered_map<int, MIntArray> m_faceToVerts;
     std::unordered_map<int, std::pair<int,int>> m_edgeToVerts;
+    std::set<int> nearbyVertices;
     std::vector<MMatrix> m_matrcesC;// refactor maybe
 };

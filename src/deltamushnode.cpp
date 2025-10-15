@@ -6,6 +6,8 @@ std::shared_ptr<DeltaMush> DeltaMushNode::g_deltamushCache = nullptr;
 MObject DeltaMushNode::aEnableFeature;
 MObject DeltaMushNode::aEnableDeltamush;
 MObject DeltaMushNode::aSmoothing;
+MObject DeltaMushNode::aCounter;
+MObject DeltaMushNode::aEnableDebug;
 
 // --- Attribute initialization ---
 MStatus DeltaMushNode::initialize()
@@ -42,6 +44,24 @@ MStatus DeltaMushNode::initialize()
     attributeAffects(aEnableDeltamush, outputGeom);
 
 
+
+
+
+    //  Create a boolean attribute
+    aEnableDebug = nAttr.create("Debugg IMD", "debugg", MFnNumericData::kBoolean, false);
+    nAttr.setKeyable(true);
+    nAttr.setStorable(true);
+    nAttr.setReadable(true);
+    nAttr.setWritable(true);
+    nAttr.setDefault(false);
+
+    addAttribute(aEnableDebug);
+
+    // Ensure Maya knows the attribute affects the output geometry
+    attributeAffects(aEnableDebug, outputGeom);
+
+
+
     // Smoothing (float slider)
     aSmoothing = nAttr.create("smoothing", "sm", MFnNumericData::kFloat, 100.0f);
     nAttr.setMin(0.0f);     // slider min
@@ -53,6 +73,20 @@ MStatus DeltaMushNode::initialize()
     addAttribute(aSmoothing);
 
     attributeAffects(aSmoothing, outputGeom);
+
+
+	//create ancounter for debugging IMD 
+    aCounter = nAttr.create("counter", "cnt", MFnNumericData::kInt, 0);
+    nAttr.setMin(0); 
+    nAttr.setMax(100);
+    nAttr.setKeyable(true);         
+    nAttr.setStorable(true);        
+    nAttr.setReadable(true);         
+    nAttr.setWritable(true);         
+    addAttribute(aCounter);
+
+    attributeAffects(aCounter, outputGeom);
+
 
 
     return MS::kSuccess;
@@ -73,6 +107,15 @@ MStatus DeltaMushNode::setDependentsDirty(const MPlug& plugBeingDirtied, MPlugAr
 		g_deltamushCache->CalculateDeformation();
 		MGlobal::displayInfo(MString("Smoothing changed to: ") + smoothVal);
     }
+
+    if(plugBeingDirtied == aCounter)
+    {
+        int counter = 0;
+        plugBeingDirtied.getValue(counter); // works because it's a numeric attribute
+        // Call your custom method
+		g_deltamushCache->debugCCD(counter, g_deltamushCache->getPoints());
+        MGlobal::displayInfo(MString("Counter changed to: ") + counter);
+	}
 	return MPxDeformerNode::setDependentsDirty(plugBeingDirtied, affectedPlugs);
 }
 
@@ -88,6 +131,8 @@ MStatus DeltaMushNode::deform(MDataBlock& data,
 	bool enableDeltamush = data.inputValue(aEnableDeltamush, &status).asBool();
 
     float smoothing = data.inputValue(aSmoothing, &status).asFloat();
+	bool enableDebug = data.inputValue(aEnableDebug, &status).asBool();
+	int counter = data.inputValue(aCounter, &status).asInt();
     MPointArray points;
     if(enableDeltamush)
     {
@@ -98,7 +143,15 @@ MStatus DeltaMushNode::deform(MDataBlock& data,
             itGeo.allPositions(points);
             if (enableFeature)
             {
-                g_deltamushCache->improvedDM(points);
+                if(enableDebug)
+                {
+                    //g_deltamushCache->debugCCD(counter, points);
+                }
+                else
+                {
+                    g_deltamushCache->improvedDM(points);
+                }
+               
             }
             else
             {
