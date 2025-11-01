@@ -57,7 +57,7 @@ public:
     }
 
     MyLocatorDrawOverride(const MObject& obj)
-        : MPxDrawOverride(obj, nullptr, /* isAlwaysDirty */ false) {
+        : MPxDrawOverride(obj, nullptr, /* isAlwaysDirty */ true) {
     }
 
     ~MyLocatorDrawOverride() override {}

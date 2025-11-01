@@ -106,6 +106,9 @@ MStatus DeltaMushNode::setDependentsDirty(const MPlug& plugBeingDirtied, MPlugAr
         g_deltamushCache->setDeltaMushFactor(smoothVal);
 		g_deltamushCache->CalculateDeformation();
 		MGlobal::displayInfo(MString("Smoothing changed to: ") + smoothVal);
+        MDagPath dagPath;
+        MDagPath::getAPathTo(thisMObject(), dagPath);
+        MHWRender::MRenderer::setGeometryDrawDirty(dagPath.node());
     }
 
     if(plugBeingDirtied == aCounter)
@@ -115,6 +118,7 @@ MStatus DeltaMushNode::setDependentsDirty(const MPlug& plugBeingDirtied, MPlugAr
         // Call your custom method
 		g_deltamushCache->debugCCD(counter, g_deltamushCache->getPoints());
         MGlobal::displayInfo(MString("Counter changed to: ") + counter);
+        
 	}
 	return MPxDeformerNode::setDependentsDirty(plugBeingDirtied, affectedPlugs);
 }

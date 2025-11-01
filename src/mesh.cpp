@@ -21,12 +21,13 @@ MeshHandler::MeshHandler(const MeshHandler& other)
     m_normals(other.m_normals),
     m_verticesCounts(other.m_verticesCounts),
     m_verticesIndices(other.m_verticesIndices),
-    m_fnMesh(other.m_dagPath) // reinitialize from copied dagPath
+    m_fnMesh(other.m_dagPath), // reinitialize from copied dagPath
 {
     initConnected();
     initFaces();
     initEdges();
     m_matrcesC.resize(m_vertices.length());
+    m_matrcesC = other.m_matrcesC;
 }
 
 
@@ -239,6 +240,7 @@ MeshHandler& MeshHandler::operator=(const MeshHandler& other) {
 		m_connected = other.m_connected;
         m_fnMesh.setObject(m_dagPath);
 		m_matrcesC.resize(m_vertices.length());
+        m_matrcesC = other.m_matrcesC;
         
 
     }

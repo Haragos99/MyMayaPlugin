@@ -95,6 +95,9 @@ MStatus MyPluginCmd::doIt(const MArgList&)
     deltamush->CalculateDelta();
     deltamush->CalculateDeformation();
 
+
+
+    // TODO: Refactor this for non static solution  
     DeltaMushNode::g_deltamushCache = deltamush;
     MyLocatorDrawOverride::deltamushCache = deltamush;
     MString cmd;

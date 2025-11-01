@@ -15,8 +15,12 @@ public:
 	void test(MPointArray points);
 	void improvedDM(MPointArray points);
 	void setDeltaMushFactor(float factor) { deltaMushFactor = factor/100; }
+	float getDeltaMushFactor() { return deltaMushFactor; }
 	MPointArray getPoints() { return m_mesh.getVertices(); }
 	void updateMesh() { m_mesh.updateMesh(); }	
+	MeshHandler getMeshHandler() { return m_mesh; }
+	MeshHandler getSmoothMeshHandler() { return m_smooth; }
+	std::vector<MPoint> getDeltas() { return deltas; }
 private:
 	float deltaMushFactor;
 	int smoothIterion;
