@@ -21,7 +21,7 @@ MeshHandler::MeshHandler(const MeshHandler& other)
     m_normals(other.m_normals),
     m_verticesCounts(other.m_verticesCounts),
     m_verticesIndices(other.m_verticesIndices),
-    m_fnMesh(other.m_dagPath), // reinitialize from copied dagPath
+    m_fnMesh(other.m_dagPath) // reinitialize from copied dagPath
 {
     initConnected();
     initFaces();

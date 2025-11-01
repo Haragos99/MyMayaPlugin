@@ -2,10 +2,7 @@
 
 MTypeId MyLocator::id(0x001226C1);
 
-
-
 std::shared_ptr<DeltaMush> MyLocatorDrawOverride::deltamushCache = nullptr;
-
 
 // TODO: Refactor for other solution to use MUserData
 void MyLocatorDrawOverride::addUIDrawables(
