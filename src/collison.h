@@ -2,7 +2,14 @@
 #include "framework.h"
 #include "mesh.h"
 
-
+struct CollisonData {
+	std::vector<MBoundingBox> intersected;
+	std::vector<MBoundingBox> smoothmesh;
+	std::vector<MBoundingBox> mesh;
+	std::set<int> collidedVertecesIdx;
+	std::set<int> collidedFacesIdx;
+	std::set<int> collidedEdgesIdx;
+};
 
 
 struct Delta {

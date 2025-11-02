@@ -46,3 +46,50 @@ void MyLocatorDrawOverride::addUIDrawables(
 
     drawManager.endDrawable();
 }
+
+
+
+
+// Draws a bounding box (outline) for the given box in world space
+void MyLocatorDrawOverride::drawBoundingBox(MHWRender::MUIDrawManager& drawManager,
+    const MBoundingBox& box,
+    const MColor& color = MColor(0.0f, 1.0f, 0.0f),
+    float lineWidth = 1.0f)
+{
+
+    MPoint minP = box.min();
+    MPoint maxP = box.max();
+
+    MPoint corners[8] = {
+        MPoint(minP.x, minP.y, minP.z),
+        MPoint(maxP.x, minP.y, minP.z),
+        MPoint(maxP.x, maxP.y, minP.z),
+        MPoint(minP.x, maxP.y, minP.z),
+        MPoint(minP.x, minP.y, maxP.z),
+        MPoint(maxP.x, minP.y, maxP.z),
+        MPoint(maxP.x, maxP.y, maxP.z),
+        MPoint(minP.x, maxP.y, maxP.z)
+    };
+
+    drawManager.setColor(color);
+    drawManager.setLineWidth(lineWidth);
+
+    // bottom face
+    drawManager.line(corners[0], corners[1]);
+    drawManager.line(corners[1], corners[2]);
+    drawManager.line(corners[2], corners[3]);
+    drawManager.line(corners[3], corners[0]);
+
+    // top face
+    drawManager.line(corners[4], corners[5]);
+    drawManager.line(corners[5], corners[6]);
+    drawManager.line(corners[6], corners[7]);
+    drawManager.line(corners[7], corners[4]);
+
+    // vertical edges
+    drawManager.line(corners[0], corners[4]);
+    drawManager.line(corners[1], corners[5]);
+    drawManager.line(corners[2], corners[6]);
+    drawManager.line(corners[3], corners[7]);
+
+}

@@ -1,7 +1,7 @@
 #pragma once
 #include "framework.h"
 #include "mesh.h"
-
+#include "collison.h"
 
 class DeltaMush {
 public:
@@ -17,11 +17,13 @@ public:
 	void setDeltaMushFactor(float factor) { deltaMushFactor = factor/100; }
 	float getDeltaMushFactor() { return deltaMushFactor; }
 	MPointArray getPoints() { return m_mesh.getVertices(); }
+	CollisonData& getCollisonData() { return m_collisonData; }
 	void updateMesh() { m_mesh.updateMesh(); }	
-	MeshHandler getMeshHandler() { return m_mesh; }
-	MeshHandler getSmoothMeshHandler() { return m_smooth; }
+	MeshHandler& getMeshHandler() { return m_mesh; }
+	MeshHandler& getSmoothMeshHandler() { return m_smooth; }
 	std::vector<MPoint> getDeltas() { return deltas; }
 private:
+	CollisonData m_collisonData;
 	float deltaMushFactor;
 	int smoothIterion;
 	MeshHandler m_mesh;

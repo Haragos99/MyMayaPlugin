@@ -76,7 +76,7 @@ MStatus MyPluginCmd::doIt(const MArgList&)
     MStatus status;
     MString nodeType("deltaMushNode");
     MFnDependencyNode fnDep;
-    MObject node = fnDep.create(nodeType, &status);
+    //MObject node = fnDep.create(nodeType, &status);
     MDagPath dagPath;
     selection.getDagPath(0, dagPath);  // Get first selected item
     MGlobal::displayInfo("Add mesh for: " + dagPath.fullPathName());

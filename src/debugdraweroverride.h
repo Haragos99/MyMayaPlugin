@@ -82,6 +82,14 @@ public:
 
     static  std::shared_ptr<DeltaMush> deltamushCache;
 
+
+
+    void drawBoundingBox(MHWRender::MUIDrawManager& drawManager,
+        const MBoundingBox& box,
+        const MColor& color = MColor(0.0f, 1.0f, 0.0f),
+        float lineWidth = 1.0f);
+
+
     MUserData* prepareForDraw(
         const MDagPath& objPath,
         const MDagPath& cameraPath,
