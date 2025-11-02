@@ -1,8 +1,8 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.18)
 project(MyMayaPlugin LANGUAGES CXX)
 
 # C++ standard
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Maya SDK path 
@@ -54,7 +54,8 @@ add_library(MyMayaPlugin SHARED
     src/tight_inclusion/interval.cpp
     src/tight_inclusion/interval_root_finder.cpp
     src/tight_inclusion/logger.cpp
-    src/collison.cpp  "src/debugdraweroverride.cpp" "src/aabb.h")
+    src/intersectionfilter.cpp
+    src/collison.cpp  "src/debugdraweroverride.cpp" "src/aabb.h" )
 target_compile_definitions(MyMayaPlugin PRIVATE NOMINMAX)
 
 # If you want to include headers in IDE:
@@ -66,6 +67,7 @@ target_sources(MyMayaPlugin PRIVATE
     src/deltamushnode.h
     src/debugdraweroverride.h
     src/collison.h
+    src/intersectionfilter.h
     src/tight_inclusion/avx.hpp
     src/tight_inclusion/ccd.hpp
     src/tight_inclusion/interval.hpp
@@ -75,16 +77,23 @@ target_sources(MyMayaPlugin PRIVATE
     src/tight_inclusion/types.hpp
 )
 
+
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 
 # Find spdlog
-find_package(spdlog REQUIRED)
+find_package(spdlog REQUIRED NO_MODULE)
+
+
+
+
+
+# You will NOT need to link targets like MeshLib::MRViewer, MeshLib::MRApp, etc.
+
 
 # Add Eigen include directories to your target
 target_link_libraries(MyMayaPlugin PRIVATE Eigen3::Eigen)
 
-target_link_libraries(MyMayaPlugin PRIVATE spdlog::spdlog)
-
+target_link_libraries(MyMayaPlugin PRIVATE spdlog::spdlog_header_only)
 
 # Build as .mll shared library
 set_target_properties(MyMayaPlugin PROPERTIES SUFFIX ".mll")
@@ -98,6 +107,13 @@ target_compile_definitions(MyMayaPlugin PRIVATE
     $<$<CONFIG:Release>:NDEBUG>
 )
 
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+    _ITERATOR_DEBUG_LEVEL=0
+    NT_PLUGIN
+    REQUIRE_IOSTREAM
+)
+
+
 # Link Maya + system libs
 target_link_libraries(MyMayaPlugin PRIVATE
     Foundation.lib
@@ -110,11 +126,15 @@ target_link_libraries(MyMayaPlugin PRIVATE
     opengl32.lib
 )
 
+
 # Compiler flags
 target_compile_options(MyMayaPlugin PRIVATE
     /W3
     /permissive-
 )
+
+
+
 
 # Output dirs per-config
 set_target_properties(MyMayaPlugin PROPERTIES
