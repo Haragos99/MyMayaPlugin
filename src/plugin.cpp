@@ -104,6 +104,10 @@ MStatus MyPluginCmd::doIt(const MArgList&)
     cmd.format("deformer -type \"^1s\" ^2s;", nodeType, dagPath.fullPathName());
     MGlobal::executeCommand(cmd);
 
+
+    MGlobal::executeCommand("createNode myLocator");
+
+
     MGlobal::displayInfo("Mesh modified successfully.");
     return MStatus::kSuccess;
 }

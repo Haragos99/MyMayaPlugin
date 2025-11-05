@@ -9,6 +9,15 @@ struct CollisonData {
 	std::set<int> collidedVertecesIdx;
 	std::set<int> collidedFacesIdx;
 	std::set<int> collidedEdgesIdx;
+
+	void clear() {
+		intersected.clear();
+		smoothmesh.clear();
+		mesh.clear();
+		collidedVertecesIdx.clear();
+		collidedFacesIdx.clear();
+		collidedEdgesIdx.clear();
+	}	
 };
 
 
@@ -36,11 +45,13 @@ public:
 	Collison(std::vector<MPoint> v);
 	void init(std::vector<MPoint> v);
 
-	bool collisondetec(MeshHandler& mesh, MeshHandler& smooth);
+	bool collisondetec(MeshHandler& mesh, MeshHandler& smooth,CollisonData& data);
 
 	float getAlfa() { return alfa; }
 	void setAlfa(float newalfa) { alfa = newalfa; }
-
+	std::set<int> vertexesIDX;
+	std::unordered_map<int, std::pair<int, int>> edgesIDX;
+	std::unordered_map<int, MIntArray> facesIDX;
 
 private:
 	Eigen::Vector3f toEigenVec(const MPoint v) {
@@ -48,10 +59,11 @@ private:
 	}
 	void setRestToi(float newtoi);
 	void setMeshTio(int vertexIdx, MeshHandler& mesh);
-	void setSmalest(int vvertexIdx, int f, int edegs, int edegs2, MeshHandler& mesh);
+	void setSmalest(int vvertexIdx, int f, int edegs, int edegs2, MeshHandler& mesh,  CollisonData& data);
 	void restCollied();
 	std::vector<Delta> deltas;
 	Eigen::Vector3f err = Eigen::Vector3f(-1, -1, -1);  // Error bounds
+
 	float tmax;
 	float tmaxiter;
 	float tolerance;

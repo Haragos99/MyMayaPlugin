@@ -35,7 +35,15 @@ public:
 
     void recalculateNormals();
 
-    std::set<int> getConnectedVertices(int index);
+	const std::set<int>& getNearbyVertices() const { return nearbyVertices; }
+
+	const std::unordered_map<int, MIntArray>& getNearbyFaces() const { return m_nearby_faceToVerts; }
+
+	const std::unordered_map<int, std::pair<int, int>>& getNearbyEdges() const { return m_nearby_edgeToVerts; }
+
+    MBoundingBox getBoundingBox() { return m_fnMesh.boundingBox(); }
+
+    std::set<int>& getConnectedVertices(int index);
 
     MeshHandler& operator=(const MeshHandler& other);
     // Iterators
@@ -59,10 +67,18 @@ public:
     void info();
     MeshHandler createCopy();
     void setMatrix(int idx, const MMatrix& C);
+    MObject getMeshObject();
+
     // Utility Methods
     void updateMesh(); // Apply changes to the mesh
     ~MeshHandler(){}
-    
+   
+
+    bool intesectMesh(MPoint point, MVector rayDir);
+
+
+    std::set<int> findIndicesWithValue(int value);
+
 private:
     
     PolyData getPolydata(size_t index, int count);
@@ -84,4 +100,8 @@ private:
     std::unordered_map<int, std::pair<int,int>> m_edgeToVerts;
     std::set<int> nearbyVertices;
     std::vector<MMatrix> m_matrcesC;// refactor maybe
+    std::unordered_map<int, MIntArray> m_nearby_faceToVerts;
+    std::unordered_map<int, std::pair<int, int>> m_nearby_edgeToVerts;
+
+
 };

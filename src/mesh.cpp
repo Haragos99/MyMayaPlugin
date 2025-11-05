@@ -55,10 +55,38 @@ void MeshHandler::collectVerticesNearPoint(const MPoint& origin, double threshol
     }
 
 
+    for(auto face : m_faceToVerts)
+    {
+        auto idx = face.second;
+        for(int i = 0; i < idx.length(); ++i)
+        {
+            MPoint p = m_vertices[idx[i]];
+            if (p.distanceTo(origin) <= threshold)
+            {
+				m_nearby_faceToVerts[face.first] = idx;
+				break;
+            }
+		}
+    }
+
+
+    for(auto edge : m_edgeToVerts)
+    {
+        auto idxs = edge.second;
+		int first_edge = idxs.first;
+		int second_edge = idxs.second;
+		MPoint p1 = m_vertices[first_edge];
+		MPoint p2 = m_vertices[second_edge];
+
+        if (p1.distanceTo(origin) <= threshold || p2.distanceTo(origin) <= threshold)
+        {
+            m_nearby_edgeToVerts[edge.first] = idxs;
+        }
+	}
 
 
 
-    MGlobal::displayInfo(MString("Found ") + (int)nearbyVertices.size() + " vertices near point.");
+    MGlobal::displayInfo(MString("Found ") + (int)nearbyVertices.size() + " vertices near point. "+"Faces: "+ (int)m_nearby_faceToVerts.size() + " Edges: " + (int)m_nearby_edgeToVerts.size());
 }
 
 MeshHandler::MeshHandler(const MObject& mesh) : m_fnMesh (mesh)
@@ -78,7 +106,7 @@ MeshHandler::MeshHandler(const MObject& mesh) : m_fnMesh (mesh)
     m_matrcesC.resize(m_vertices.length());
 }
 
-std::set<int> MeshHandler::getConnectedVertices(int index)
+std::set<int>& MeshHandler::getConnectedVertices(int index)
 {
     return m_connected[index];
 }
@@ -104,6 +132,21 @@ void MeshHandler::initConnected()
 }
 
 
+// Create a new MObject representing the mesh with updated vertices
+MObject MeshHandler::getMeshObject()
+{
+
+    MStatus status;
+
+    // Create an in-memory mesh data container (not visible in the scene)
+    MFnMeshData meshDataFn;
+    MObject meshDataObj = meshDataFn.create(&status);
+    MObject sourceMeshObj = m_fnMesh.object();
+    return sourceMeshObj;
+
+
+
+}
 
 
 void MeshHandler::initFaces()
@@ -245,6 +288,108 @@ MeshHandler& MeshHandler::operator=(const MeshHandler& other) {
 
     }
     return *this;
+}
+
+
+
+bool MeshHandler::intesectMesh(MPoint point, MVector rayDir)
+{
+    /*
+    if (rayDir.length() < 1e-6) {
+        rayDir = MVector(0.0, 0.0, 1.0); // fallback
+    }
+    rayDir.normalize();
+    MPointArray hitPoints;
+    double tolerance = 0.0; // or small positive
+    MIntArray polyIds;
+    MStatus status;
+    bool hit = m_fnMesh.intersect(point,
+        rayDir,
+        hitPoints,
+        tolerance,
+        MSpace::kWorld,
+        &polyIds,
+        &status);
+
+	int numHits = hitPoints.length();
+    */
+
+    MFloatVector directions[] = {
+    MFloatVector(1, 0, 0), MFloatVector(0, 1, 0), MFloatVector(0, 0, 1),
+    MFloatVector(1, 1, 1).normal(), MFloatVector(-1, 1, 1).normal(),
+    // ... add more ...
+    };
+    int numRays = 5;
+    int insideVoteCount = 0;
+
+
+
+
+    MFloatPointArray hitPoints;       // Stores the locations of all hits
+
+    // We don't care about the order of hits, just the count
+    bool sortHits = false;
+    // Acceleration parameters (can be left null)
+    MMeshIsectAccelParams accelParams = m_fnMesh.autoUniformGridParams();
+
+    MStatus status;
+    MIntArray* faceIds;
+    // Default tolerance is fine
+    float tolerance = 1e-6f;
+
+    MFloatPoint hitPoint;
+    float hitRayParam = 0.0f;
+    int hitFace = -1;
+    int hitTriangle = -1;
+    float hitBary1 = 0.0f, hitBary2 = 0.0f;
+    bool testBothDirections = false;
+    float maxParam = 1e6f;
+    for (int j = 0; j < 5;j++)
+    {
+		rayDir = directions[j];
+        bool hit = m_fnMesh.closestIntersection(point,
+            rayDir,
+            nullptr,              // faceIds (nullptr => all)
+            nullptr,              // triIds
+            false,                // idsSorted
+            MSpace::kWorld,
+            maxParam,
+            testBothDirections,
+            &accelParams,
+            hitPoint,
+            &hitRayParam,
+            &hitFace,
+            &hitTriangle,
+            &hitBary1,
+            &hitBary2,
+            status);
+        if (!status)
+        {
+            MGlobal::displayWarning("Intersection test failed for point ");
+
+        }
+
+        if (hitPoints.length() % 2 == 1)
+        {
+            MGlobal::displayInfo("Intersected ");
+            return true;
+        }
+    }
+
+	return false;
+}
+
+std::set<int>  MeshHandler::findIndicesWithValue(int value)
+{
+    std::set<int>  indices;
+    for (const auto& [key, pairVal] : m_edgeToVerts)
+    {
+        if (pairVal.first == value || pairVal.second == value)
+        {
+            indices.insert(key);
+        }
+    }
+    return indices;
 }
 
 

@@ -26,7 +26,7 @@ void Collison::init(std::vector<MPoint> v)
     }
 }
 
-bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth)
+bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth, CollisonData& data)
 {
 
     smallestTio = 1;
@@ -38,6 +38,10 @@ bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth)
     float toi = 0;
     bool isanycollied = false;
 
+    std::set<int> veIDX;
+    std::unordered_map<int, std::pair<int, int>> edIDX;
+    std::unordered_map<int, MIntArray> faIDX;
+
 
     int vindex = -1;
     int findex = -1;
@@ -45,10 +49,10 @@ bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth)
     int eindex2 = -1;
 
     int pointsCount = mesh.getVertices().length();
-    auto& faceIndices = mesh.getFacesIndices();
-    auto& edgeIndices = mesh.getEdgesIndices();
+    auto& faceIndices = mesh.getNearbyFaces();
+    //auto& edgeIndices = mesh.getEdgesIndices();
     
-    for (int vertexIdx = 0;  vertexIdx < pointsCount; ++vertexIdx)
+    for (int vertexIdx : vertexesIDX)
     {
         if (deltas[vertexIdx].isCollied)
         {
@@ -56,7 +60,7 @@ bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth)
         }
         v_t1 = toEigenVec(mesh.getPoint(vertexIdx));
         v_t0 = toEigenVec(smooth.getPoint(vertexIdx));
-        for (auto& face : faceIndices)
+        for (auto& face : facesIDX)
         {
             /// it Must be triangle
             int faceIdx = face.first;
@@ -96,6 +100,8 @@ bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth)
                     vindex = vertexIdx;
                     findex = faceIdx;
                 }
+                faIDX[faceIdx] = faceVertecesIdx;
+                veIDX.insert(vertexIdx);
                 isanycollied = true;
 
             }
@@ -103,8 +109,9 @@ bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth)
     }
 
     
-    for (auto edge : edgeIndices)
+    for (auto edge : edgesIDX)
     {
+
 		auto edgesidx = edge.second;
         if (deltas[edgesidx.first].isCollied || deltas[edgesidx.second].isCollied)
         {
@@ -118,7 +125,7 @@ bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth)
         // Assume edge 2 moves (displacement example for t0)
         Eigen::Vector3f ea0_t0 = toEigenVec(smooth.getPoint(edgesidx.first));
         Eigen::Vector3f ea1_t0 = toEigenVec(smooth.getPoint(edgesidx.second));
-        for (auto edge2 : edgeIndices)
+        for (auto edge2 : edgesIDX)
         {
             auto edgesidx2 = edge2.second;
 
@@ -156,6 +163,8 @@ bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth)
                     eindex = edge.first;
                     eindex2 = edge2.first;
                 }
+                edIDX[edge.first] = edge.second;
+                edIDX[edge2.first] = edge2.second;
                 isanycollied = true;
 
 
@@ -166,12 +175,26 @@ bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth)
     
     alfa = smallestTio;
     prevTio = smallestTio;
-    setSmalest(vindex, findex, eindex, eindex2, mesh);
+    setSmalest(vindex, findex, eindex, eindex2, mesh, data);
     setRestToi(alfa);
     for (int vertexIdx = 0; vertexIdx < pointsCount; ++vertexIdx)
     {
         setMeshTio(vertexIdx, mesh);
     }
+    if (veIDX.size() > 0)
+    {
+		vertexesIDX = veIDX;
+    }
+    if (faIDX.size() > 0)
+    {
+		facesIDX = faIDX;
+    }
+    if (edIDX.size() > 0)
+    {
+		edgesIDX = edIDX;
+    }
+
+
 	std::string alfastr = "Alfa: " + std::to_string(alfa);
     MGlobal::displayInfo(alfastr.c_str());
     MGlobal::displayInfo(std::to_string(pointsCount).c_str());
@@ -200,7 +223,7 @@ void Collison::setMeshTio(int vertexIdx, MeshHandler& mesh)
 
 }
 
-void Collison::setSmalest(int vertexIdx, int f, int edegs, int edegs2,MeshHandler& mesh)
+void Collison::setSmalest(int vertexIdx, int f, int edegs, int edegs2,MeshHandler& mesh, CollisonData& data)
 {
     if (edegs != -1)
     {
@@ -220,6 +243,8 @@ void Collison::setSmalest(int vertexIdx, int f, int edegs, int edegs2,MeshHandle
         deltas[edgePoints2.second].toi = alfa;
         deltas[edgePoints2.second].isCollied = true;
         setMeshTio(edgePoints2.second, mesh);
+		data.collidedEdgesIdx.insert(edegs);
+		data.collidedEdgesIdx.insert(edegs2);
 
      
     }
@@ -239,6 +264,8 @@ void Collison::setSmalest(int vertexIdx, int f, int edegs, int edegs2,MeshHandle
             deltas[pointIdx].isCollied = true;
             setMeshTio(pointIdx, mesh);
         }
+		data.collidedVertecesIdx.insert(vertexIdx);
+		data.collidedFacesIdx.insert(f);
 	}
 
 

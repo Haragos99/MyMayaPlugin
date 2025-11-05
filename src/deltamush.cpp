@@ -1,5 +1,6 @@
 #include "deltamush.h"
-
+#include <chrono>
+#include "intersectionfilter.h"
 
 
 
@@ -7,6 +8,7 @@ DeltaMush::DeltaMush(MDagPath& dagPath) : m_mesh(dagPath)
 {
 	smoothIterion = 20;
 	deltaMushFactor = 1.0f;
+	m_mesh.collectVerticesNearPoint(MPoint(0, 0, 0),1.8);
 }
 
 
@@ -90,7 +92,6 @@ void DeltaMush::CalculateDelta()
 		// Transform the position vector into tangent space
 		MPoint delta = R_inv * originalPoints[vertIndex];
 		deltas.push_back(delta);
-
 	}
 	MGlobal::displayInfo("Delta successfully.");
 	MGlobal::displayInfo(std::to_string(deltas.size()).c_str());
@@ -215,15 +216,74 @@ void DeltaMush::test(MPointArray points)
 
 void DeltaMush::improvedDM(MPointArray points)
 {
+	
 	m_mesh.setVertices(points);
 	MGlobal::displayInfo("Start");
 	CalculateDeformation();
-	Collison collison = Collison(deltas);
-	//auto smooth = smoothMesh(m_mesh, smoothIterion);
-	//smooth.recalculateNormals();
-	//it is not working becASE OF THE SMOOTH MAYBE
+	m_collisonData.clear();
+
+
+	auto start = std::chrono::high_resolution_clock::now();
+	std::set<int> AverIDX;
+	for (auto face : m_smooth.getFacesIndices())
+	{
+		MBoundingBox box;
+		box.expand(m_smooth.getPoint(face.second[0]));
+		box.expand(m_smooth.getPoint(face.second[1]));
+		box.expand(m_smooth.getPoint(face.second[2]));
+		double factor = 1;
+		MPoint ctr = box.center();
+		MVector half = (box.max() - ctr);
+		half *= factor;
+		box = MBoundingBox(ctr - half, ctr + half);
+
+
+		//m_collisonData.smoothmesh.push_back(box);
+
+	}
 	
-	while(collison.collisondetec(m_mesh, m_smooth))
+	for (auto face2 : m_mesh.getVerticesIndices())
+	{
+		MBoundingBox box2;
+		auto p = m_mesh.getPoint(face2);
+		p += MVector(0.00015, 0.00015, 0.00015);
+		box2.expand(p);
+		p = m_mesh.getPoint(face2);
+		p -= MVector(0.00015, 0.00105, 0.00015);
+		box2.expand(p);
+
+		//m_collisonData.mesh.push_back(box2);
+	}
+	
+
+	for(auto b :m_collisonData.mesh)
+	{
+		for (auto b2 : m_collisonData.smoothmesh)
+		{
+			if(b2.intersects(b))
+			{
+				//m_collisonData.intersected.push_back(b);
+				//m_collisonData.intersected.push_back(b2);
+			}
+		}
+	}
+
+	//IntersectionFilter filter(m_smooth);
+
+	//filter.clalculateIntersections(m_mesh.getVertices(), m_smooth.getVertices(), m_mesh, m_smooth,m_collisonData);
+
+	Collison collison = Collison(deltas);
+	;
+	collison.edgesIDX = m_mesh.getNearbyEdges();
+	collison.facesIDX = m_mesh.getNearbyFaces();
+	collison.vertexesIDX = m_mesh.getNearbyVertices();
+
+
+
+
+
+	MGlobal::displayInfo(std::to_string(m_collisonData.intersected.size()).c_str());
+	while(collison.collisondetec(m_mesh, m_smooth, m_collisonData))
 	{
 		//collison.collisondetec(m_mesh, smooth);
 		CCDDeformation();
@@ -231,7 +291,10 @@ void DeltaMush::improvedDM(MPointArray points)
 		int percent = alfa * 100;
 		collison.setAlfa(0);
 	}
+	auto end = std::chrono::high_resolution_clock::now();
+	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
+	MGlobal::displayInfo(MString("Execution time: ") + duration + " ms");
 	m_mesh.updateMesh();
 }
 
