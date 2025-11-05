@@ -53,8 +53,8 @@ void MyLocatorDrawOverride::addUIDrawables(
 // Draws a bounding box (outline) for the given box in world space
 void MyLocatorDrawOverride::drawBoundingBox(MHWRender::MUIDrawManager& drawManager,
     const MBoundingBox& box,
-    const MColor& color = MColor(0.0f, 1.0f, 0.0f),
-    float lineWidth = 1.0f)
+    const MColor& color,
+    float lineWidth)
 {
 
     MPoint minP = box.min();
