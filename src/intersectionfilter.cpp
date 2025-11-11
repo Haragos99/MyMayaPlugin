@@ -194,3 +194,54 @@ void IntersectionFilter::clalculateIntersections(const MPointArray& original, co
 		+ std::to_string(faceIndices.size()).c_str()
 	);
 }
+std::set<int> IntersectionFilter::clalculateIntersections(MeshHandler& original, MeshHandler& smooth)
+{
+	original.updateMesh();
+	auto normlas = original.getNormals();
+	auto& points = original.getVertices();
+	//allIntersections flags
+	MMeshIsectAccelParams accelParams;
+	accelParams = original.getIntersectParameters();
+	smooth.updateMesh();
+	bool sortHits = false;
+	float tolerance = 0.0001f;
+	MFloatPointArray hitPoints;
+	MFloatArray hitRayParams;
+	MIntArray hitFaces;
+	MIntArray hitTriangles;
+	MFloatArray hitBary1;
+	MFloatArray hitBary2;
+	auto& fnMesh1 = smooth.getMeshFunction();
+	MPoint closePoint;
+	MVector closeNormal;
+	std::set<int> collisionPoints;
+	for (int idx = 0; idx < points.length(); ++idx) {
+		// e.g. get position
+		MPoint pos = points[idx];
+		// do your work
+
+		MFloatVector normal = -normlas[idx];
+		auto raySource = MFloatPoint(pos[0], pos[1], pos[2], 1.0);
+
+		auto rayDir = MFloatVector(normal[0], normal[1], normal[2]);
+		bool hit = fnMesh1.allIntersections(raySource, rayDir, NULL, NULL, false, MSpace::kWorld, 99999, false, &accelParams, false,
+			hitPoints, &hitRayParams, &hitFaces, &hitTriangles, &hitBary1, &hitBary2, 0.000001f);
+
+		if (hit)
+		{
+			fnMesh1.getClosestPointAndNormal(pos, closePoint, closeNormal, MSpace::kWorld, NULL, NULL);
+			auto delta = pos - closePoint;
+			//collision check with dot product
+			auto angle = delta * closeNormal;
+			if (angle < 0)
+			{
+				//MGlobal::displayInfo("Collision");
+				collisionPoints.insert(idx);
+			}
+		}
+	}
+	return collisionPoints;
+}
+
+
+

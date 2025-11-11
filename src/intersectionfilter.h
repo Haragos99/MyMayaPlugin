@@ -7,6 +7,8 @@ class IntersectionFilter {
 		std::unordered_map<int, MIntArray> faceIndices;
 		std::set<int> vertexIndices;
 		std::set<int> edgeIndices;
+		std::set<int>findSelfCollidingTriangles(MeshHandler& target);
+		std::set<int> clalculateIntersections(MeshHandler& original, MeshHandler& smooth);
 
 private:
 

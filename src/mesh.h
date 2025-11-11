@@ -61,6 +61,10 @@ public:
 
     void resetNormals();
 
+    MPointArray getTrianglePoints(int faceIndex);
+
+	MFnMesh& getMeshFunction() { return m_fnMesh; }
+
     void normalizeNormals();
 
     MPoint getNextPoint(int index);
@@ -69,10 +73,14 @@ public:
     void setMatrix(int idx, const MMatrix& C);
     MObject getMeshObject();
 
+
+    MMeshIsectAccelParams getIntersectParameters() {return m_fnMesh.autoUniformGridParams();}
     // Utility Methods
     void updateMesh(); // Apply changes to the mesh
     ~MeshHandler(){}
    
+
+    MIntArray getConnectedFaces(int idx) { return m_connected_face[idx]; }
 
     bool intesectMesh(MPoint point, MVector rayDir);
 
@@ -101,6 +109,9 @@ private:
     std::set<int> nearbyVertices;
     std::vector<MMatrix> m_matrcesC;// refactor maybe
     std::unordered_map<int, MIntArray> m_nearby_faceToVerts;
+
+    std::unordered_map<int, MIntArray> m_connected_face;
+
     std::unordered_map<int, std::pair<int, int>> m_nearby_edgeToVerts;
 
 
