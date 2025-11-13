@@ -5,6 +5,7 @@
 #include <maya/MFnPlugin.h>
 
 
+
 MStatus initializePlugin(MObject obj) {
     MFnPlugin plugin(obj, "Haragos", "1.0", "Any");
     MStatus st;
@@ -33,10 +34,13 @@ MStatus initializePlugin(MObject obj) {
             MyLocatorDrawOverride::Creator
         );
       st.perror("REWGregisterNode"); // This will print an error if registration fails
+
+
     if (st == MS::kSuccess)
     {
         MGlobal::displayInfo("It worked");
     }
+
 
     return plugin.registerCommand("helloMaya", MyPluginCmd::creator);
 }

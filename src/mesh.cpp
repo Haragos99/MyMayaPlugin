@@ -160,7 +160,14 @@ void MeshHandler::initFaces()
         MIntArray faceVerts;
         polyIt->getVertices(faceVerts);
         m_faceToVerts[fIdx] = faceVerts;
+        MIntArray cfaces;
+        polyIt->getConnectedFaces(cfaces);
+		m_connected_face[fIdx] = cfaces;
     }
+
+
+
+
 }
 void MeshHandler::initEdges()
 {
@@ -392,7 +399,18 @@ std::set<int>  MeshHandler::findIndicesWithValue(int value)
     return indices;
 }
 
+MPointArray MeshHandler::getTrianglePoints(int faceIndex)
+{
+    MPointArray trianglePoints;
+    MIntArray vertices;
+    m_fnMesh.getPolygonVertices(faceIndex, vertices);
+    for (unsigned int i : vertices){
+		MPoint point = m_vertices[i];
+        trianglePoints.append(point);
+    }
 
+	return trianglePoints;
+}
 
 std::shared_ptr<MItMeshVertex> MeshHandler::getVertexIterator(MStatus* status ) const
 {

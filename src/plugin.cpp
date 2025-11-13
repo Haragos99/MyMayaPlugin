@@ -7,14 +7,14 @@ MCallbackIdArray MyPluginCmd::g_callbackIds;
 std::shared_ptr<DeltaMush> MyPluginCmd::deltamush;
 
 
-MStatus MyPluginCmd::smoothMesh(MObject& meshObj, int iterations)
+MFnMesh& MyPluginCmd::smoothMesh(MObject& meshObj, int iterations)
 {
     MStatus status;
-    double smoothingFactor = 0.5;
+    double smoothingFactor = 0.25;
     MFnMesh meshFn(meshObj, &status);
     if (!status) 
     {
-        return status;
+       // return status;
     }
     unsigned int vertexCount = meshFn.numVertices();
     MPointArray currentPoints;
@@ -27,7 +27,7 @@ MStatus MyPluginCmd::smoothMesh(MObject& meshObj, int iterations)
         MItMeshVertex itVert(meshObj, &status);
         if (!status) 
         { 
-            return status; 
+            //return status; 
         }
 
         while (!itVert.isDone())
@@ -55,7 +55,7 @@ MStatus MyPluginCmd::smoothMesh(MObject& meshObj, int iterations)
     }
     // Apply new positions
     status = meshFn.setPoints(currentPoints, MSpace::kObject);
-    return status;
+    return meshFn;
 }
 
 
@@ -63,6 +63,16 @@ MStatus MyPluginCmd::smoothMesh(MObject& meshObj, int iterations)
 
 
 MStatus MyPluginCmd::doIt(const MArgList&)
+{
+    
+    //collisonTest();
+	runDeltaMush();
+    return MStatus::kSuccess;
+}
+
+
+
+MStatus MyPluginCmd::runDeltaMush()
 {
     MSelectionList selection;
     MGlobal::getActiveSelectionList(selection);
@@ -88,7 +98,7 @@ MStatus MyPluginCmd::doIt(const MArgList&)
     {
         MGlobal::displayError("No mesh found in selection.");
         return MS::kFailure;
-    }      
+    }
     MString cmd1 = "polyTriangulate " + dagPath.fullPathName();
     //MGlobal::executeCommand(cmd1);
     deltamush = std::make_shared<DeltaMush>(dagPath);
@@ -109,8 +119,275 @@ MStatus MyPluginCmd::doIt(const MArgList&)
 
 
     MGlobal::displayInfo("Mesh modified successfully.");
-    return MStatus::kSuccess;
+	return MS::kSuccess;
 }
+
+
+
+MStatus MyPluginCmd::collisonTest()
+{
+    
+    MStatus status;
+    // Get current selection list
+    MSelectionList selection;
+    MGlobal::getActiveSelectionList(selection);
+
+    // Check for exactly two items
+    if (selection.length() == 0) {
+        MGlobal::displayError("Please select mesh object");
+        return MS::kFailure;
+    }
+    // Get DagPaths for each selected item
+    MDagPath dagPath0;
+    selection.getDagPath(0, dagPath0);
+
+
+    // Optionally verify they are mesh shapes
+    MFnMesh fnMesh0(dagPath0, &status);
+    if (!status) {
+        MGlobal::displayError("First selected object is not a mesh.");
+        return MS::kFailure;
+    }
+
+
+    // create an empty mesh data container
+    MFnMeshData meshDataFn;
+    MObject newMeshData = meshDataFn.create(&status);
+    if (!status) { MGlobal::displayError("Failed to create mesh data"); return  MS::kFailure;; }
+
+    // copy the source mesh geometry into mesh data (no DAG node)
+    // copy(src, dst) -- src can be shape or mesh data, dst is mesh data.
+    MObject smoothMeshObj = fnMesh0.copy(fnMesh0.object(), newMeshData);
+    
+    // work on the copy using MFnMesh and iterators
+    MFnMesh fnMesh1(newMeshData, &status);
+    if (!status) { MGlobal::displayError("Failed attach to copy mesh data"); return  MS::kFailure;; }
+
+
+
+
+
+
+
+    double smoothingFactor = 0.5;
+
+    unsigned int vertexCount = fnMesh1.numVertices();
+    MPointArray currentPoints;
+    fnMesh1.getPoints(currentPoints, MSpace::kObject);
+
+    for (int i = 0; i < 20; ++i)
+    {
+        MPointArray updatedPoints = currentPoints;// create copy of the points
+
+        MItMeshVertex itVert(dagPath0, MObject::kNullObj, &status);
+        if (!status)
+        {
+            return status; 
+        }
+
+        while (!itVert.isDone())
+        {
+            int idx = itVert.index();
+            MIntArray connectedVerticesIndices;
+            itVert.getConnectedVertices(connectedVerticesIndices); // get indeces of the verteces
+            bool hasNeighbors = connectedVerticesIndices.length() > 0;
+            if (hasNeighbors)
+            {
+                MPoint avgPos(0.0, 0.0, 0.0);
+                for (int j = 0; j < connectedVerticesIndices.length(); ++j)
+                {
+                    avgPos += currentPoints[connectedVerticesIndices[j]];
+                }
+                avgPos = avgPos / connectedVerticesIndices.length();
+
+                MVector diff = avgPos - currentPoints[idx];
+                updatedPoints[idx] += diff * smoothingFactor;
+            }
+
+            itVert.next();
+        }
+        currentPoints = updatedPoints;
+    }
+    // Apply new positions
+    status = fnMesh1.setPoints(currentPoints, MSpace::kObject);
+    MGlobal::displayInfo("Mesh modified successfully.");
+
+
+
+
+
+
+
+
+    MItMeshVertex vertIt(dagPath0, MObject::kNullObj, &status);
+    if (!status) {
+        // Handle error
+    }
+    MItMeshPolygon faceIt(dagPath0, MObject::kNullObj, &status);
+    MFloatVectorArray normals;
+	fnMesh0.getVertexNormals(false, normals, MSpace::kObject);
+
+
+    //allIntersections flags
+    MMeshIsectAccelParams accelParams;
+    accelParams = fnMesh0.autoUniformGridParams();
+    bool sortHits = false;
+    float tolerance = 0.0001f;
+    MFloatPointArray hitPoints;
+    MFloatArray hitRayParams;
+    MIntArray hitFaces;
+    MIntArray hitTriangles;
+    MFloatArray hitBary1;
+    MFloatArray hitBary2;
+    double bias = 1e-4;
+    MPoint closePoint;
+    MVector closeNormal;
+	std::vector<MPoint> collisionPoints;
+    std::vector<MPointArray> collisionFaces;
+    for (; !vertIt.isDone(); vertIt.next()) {
+        int idx = vertIt.index(&status);
+        // e.g. get position
+        MPoint pos = vertIt.position(MSpace::kObject, &status);
+        // do your work
+
+		MFloatVector normal = -normals[idx];
+        auto raySource = MFloatPoint(pos[0]+ normal[0] * bias, pos[1] + normal[0] * bias, pos[2]+ normal[0]* bias, 1.0);
+
+        auto rayDir = MFloatVector(normal[0], normal[1], normal[2]);
+        bool hit = fnMesh1.allIntersections(raySource, rayDir, NULL, NULL, false, MSpace::kObject, 99999, false, &accelParams, false,
+            hitPoints, &hitRayParams, &hitFaces, &hitTriangles, &hitBary1, &hitBary2, 0.000001f);
+
+        if (hit)
+        {
+            //fnMesh0.getClosestPointAndNormal(pos, closePoint, closeNormal, MSpace::kWorld, NULL, NULL);
+        
+            //collision check with dot product
+            //auto angle = delta * closeNormal;
+            //MGlobal::displayInfo(std::to_string(hitFaces.length()).c_str());
+
+            fnMesh1.getClosestPointAndNormal(pos, closePoint, closeNormal, MSpace::kObject, NULL, NULL);
+
+            auto delta = pos - closePoint;
+            //collision check with dot product
+            auto angle = delta * closeNormal;
+            if (angle < 0)
+            {
+                //MGlobal::displayInfo("Collision");
+                collisionPoints.push_back(pos);
+
+                for (int i = 0; i < 0; ++i)
+                {
+                    int perv;
+                    faceIt.setIndex(hitFaces[i], perv);
+
+                    MIntArray faceVertices;
+                    faceIt.getVertices(faceVertices);
+                    MPointArray points;
+                    faceIt.getPoints(points, MSpace::kObject);
+
+                    collisionFaces.push_back(points);
+                }
+
+                    
+            }
+
+            /*
+            if (hitFaces.length() > 1)
+            {
+                for(int i = 0; i < hitFaces.length(); ++i)
+                {
+                    MPoint newPoint = MPoint(hitPoints[i]);
+					delta = pos - newPoint;
+                    fnMesh1.getClosestNormal(newPoint, closeNormal, MSpace::kWorld, NULL);
+                    auto angle = delta * closeNormal;
+                    if (angle < 0)
+                    {
+                        int perv;
+						faceIt.setIndex(hitFaces[i], perv);
+
+						MIntArray faceVertices;
+						faceIt.getVertices(faceVertices);
+                        MPointArray points;
+                        faceIt.getPoints(points, MSpace::kWorld);
+
+                        
+
+                        
+                        
+                        MGlobal::displayInfo("The Collision on face: " + MString() + hitFaces[i]);
+                        collisionPoints.push_back(pos);
+						collisionFaces.push_back(points);
+                        
+                       // MGlobal::displayInfo("The Collision on face: " + MString() + hitFaces[i]);
+                        //collisionPoints.push_back(pos);
+                        break;
+                    }
+				}
+            }
+            */
+           
+        }
+    }
+    MGlobal::executeCommand("createNode myLocator");
+	MyLocatorDrawOverride::CDpoints = collisionPoints;
+	MyLocatorDrawOverride::CDfaces = collisionFaces;
+    MGlobal::displayInfo("Collision test executed.");
+    MGlobal::displayInfo(std::to_string(collisionPoints.size()).c_str());
+}
+
+
+bool MyPluginCmd::isPointInPlane(const MPoint& p, const MPoint& a, const MPoint& b, const MPoint& c)
+{
+    // Define a small tolerance value (epsilon)
+    const double epsilon = 1e-9;
+    MVector pa = p - a;
+    MVector pb = p - b;
+    MVector pc = p - c;
+    return std::abs(mixed(pa, pb, pc)) <= epsilon;
+}
+
+
+double MyPluginCmd::mixed(MVector& a, MVector& b, MVector& c)
+{
+    auto cross = b ^ c;
+    return a * cross;
+}
+
+
+
+bool MyPluginCmd::isPointInTriangle(const MPoint& p, const MPoint& a, const MPoint& b, const MPoint& c)
+{
+    if (!isPointInPlane(p, a, b, c))
+    {
+        return false;
+    }
+
+    MVector ba = b - a;
+    MVector ca = c - a;
+    MVector pa = p - a;
+
+    const auto normDir = ba ^ ca;
+    if ((normDir * (ba ^ pa)) < 0)
+    {
+        return false;
+    }
+
+    MVector cb = c - b;
+    MVector pb = p - b;
+    if ((normDir * (cb ^ pb)) < 0)
+    {
+        return false;
+    }
+
+    MVector pc = p - c;
+    MVector ac = a - c;
+    if ((normDir * (ac ^ pc)) < 0)
+    {
+        return false;
+    }
+    return true;
+}
+
 
 
 MStatus MyPluginCmd::createCube()

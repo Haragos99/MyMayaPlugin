@@ -5,6 +5,7 @@ project(MyMayaPlugin LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+
 # Maya SDK path 
 if(NOT DEFINED MAYA_SDK_ROOT)
 
@@ -42,6 +43,11 @@ message(STATUS "Using Maya SDK path: ${MAYA_SDK_ROOT}")
 include_directories("${MAYA_SDK_ROOT}/include")
 link_directories("${MAYA_SDK_ROOT}/lib")
 
+if (MSVC)
+    add_compile_options(/utf-8)
+endif()
+
+
 # Specify that this is a shared library (.dll/.mll)
 add_library(MyMayaPlugin SHARED
     src/main.cpp
@@ -55,8 +61,7 @@ add_library(MyMayaPlugin SHARED
     src/tight_inclusion/interval_root_finder.cpp
     src/tight_inclusion/logger.cpp
     src/intersectionfilter.cpp
-    src/collison.cpp  "src/debugdraweroverride.cpp" "src/aabb.h" )
-target_compile_definitions(MyMayaPlugin PRIVATE NOMINMAX)
+    src/collison.cpp  "src/debugdraweroverride.cpp" "src/aabb.h"    )
 
 # If you want to include headers in IDE:
 target_sources(MyMayaPlugin PRIVATE
@@ -76,18 +81,14 @@ target_sources(MyMayaPlugin PRIVATE
     src/tight_inclusion/timer.hpp
     src/tight_inclusion/types.hpp
 )
+target_compile_definitions(MyMayaPlugin PRIVATE NOMINMAX)
 
 
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 
 # Find spdlog
 find_package(spdlog REQUIRED NO_MODULE)
-
-
-
-
-
-# You will NOT need to link targets like MeshLib::MRViewer, MeshLib::MRApp, etc.
+    
 
 
 # Add Eigen include directories to your target
@@ -124,7 +125,12 @@ target_link_libraries(MyMayaPlugin PRIVATE
     OpenMayaRender.lib
     Image.lib
     opengl32.lib
+   
 )
+target_link_libraries(MyMayaPlugin PRIVATE tbb12.lib)
+target_compile_definitions(MyMayaPlugin PRIVATE TBB_USE_DEBUG=0)
+
+
 
 
 # Compiler flags

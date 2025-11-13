@@ -1,7 +1,7 @@
 #include "deltamush.h"
 #include <chrono>
 #include "intersectionfilter.h"
-
+#include <tbb/parallel_for.h>
 
 
 DeltaMush::DeltaMush(MDagPath& dagPath) : m_mesh(dagPath)
@@ -15,6 +15,7 @@ DeltaMush::DeltaMush(MDagPath& dagPath) : m_mesh(dagPath)
 
 MeshHandler DeltaMush::smoothMesh(MeshHandler mesh,int iterations)
 {
+	tbb::core_type_id sa;
 	MStatus status;
 	double smoothingFactor = 0.5;
 	MPointArray currentPoints = mesh.getVertices();
@@ -224,6 +225,7 @@ void DeltaMush::improvedDM(MPointArray points)
 
 
 	auto start = std::chrono::high_resolution_clock::now();
+	/*
 	std::set<int> AverIDX;
 	for (auto face : m_smooth.getFacesIndices())
 	{
@@ -255,7 +257,7 @@ void DeltaMush::improvedDM(MPointArray points)
 		//m_collisonData.mesh.push_back(box2);
 	}
 	
-
+	
 	for(auto b :m_collisonData.mesh)
 	{
 		for (auto b2 : m_collisonData.smoothmesh)
@@ -267,21 +269,20 @@ void DeltaMush::improvedDM(MPointArray points)
 			}
 		}
 	}
-
-	//IntersectionFilter filter(m_smooth);
+	*/
+	IntersectionFilter filter(m_smooth);
 
 	//filter.clalculateIntersections(m_mesh.getVertices(), m_smooth.getVertices(), m_mesh, m_smooth,m_collisonData);
 
 	Collison collison = Collison(deltas);
-	;
+	
 	collison.edgesIDX = m_mesh.getNearbyEdges();
 	collison.facesIDX = m_mesh.getNearbyFaces();
 	collison.vertexesIDX = m_mesh.getNearbyVertices();
+	//m_collisonData.collidedFacesIdx = filter.findSelfCollidingTriangles(m_mesh);
+	m_collisonData.collidedVertecesIdx = filter.clalculateIntersections(m_mesh,m_smooth);
 
-
-
-
-
+	/*
 	MGlobal::displayInfo(std::to_string(m_collisonData.intersected.size()).c_str());
 	while(collison.collisondetec(m_mesh, m_smooth, m_collisonData))
 	{
@@ -291,6 +292,7 @@ void DeltaMush::improvedDM(MPointArray points)
 		int percent = alfa * 100;
 		collison.setAlfa(0);
 	}
+	*/
 	auto end = std::chrono::high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 

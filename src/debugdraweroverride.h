@@ -82,7 +82,8 @@ public:
 
     static  std::shared_ptr<DeltaMush> deltamushCache;
 
-
+	static std::vector<MPoint> CDpoints;
+    static std::vector<MPointArray> CDfaces;
 
     void drawBoundingBox(MHWRender::MUIDrawManager& drawManager,
         const MBoundingBox& box,
