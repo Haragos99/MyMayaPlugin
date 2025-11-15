@@ -64,9 +64,23 @@ MFnMesh& MyPluginCmd::smoothMesh(MObject& meshObj, int iterations)
 
 MStatus MyPluginCmd::doIt(const MArgList&)
 {
-    
-    //collisonTest();
-	runDeltaMush();
+    MSelectionList selection;
+    MGlobal::getActiveSelectionList(selection);
+
+    // Check for exactly two items
+    if (selection.length() == 0) {
+        MGlobal::displayError("Please select mesh object");
+        return MS::kFailure;
+    }
+    // Get DagPaths for each selected item
+    MDagPath dagPath0;
+    MDagPath dagPath1;
+	
+    selection.getDagPath(0, dagPath0);
+    selection.getDagPath(1, dagPath1);
+    collisonTest(dagPath0, dagPath1);
+    //collisonTest2(dagPath0, dagPath1);
+	//runDeltaMush();
     return MStatus::kSuccess;
 }
 
@@ -124,23 +138,39 @@ MStatus MyPluginCmd::runDeltaMush()
 
 
 
-MStatus MyPluginCmd::collisonTest()
+std::vector<MBoundingBox> buildFaceAABBs(MDagPath& meshObj)
+{
+    std::vector<MBoundingBox> faceBoxes;
+
+    MStatus status;
+    MItMeshPolygon faceIt(meshObj, MObject::kNullObj, &status);
+    if (!status) return faceBoxes;
+
+    faceBoxes.reserve(faceIt.count());
+
+    for (; !faceIt.isDone(); faceIt.next())
+    {
+        int faceIndex = faceIt.index(&status);
+
+        MPointArray pts;
+        faceIt.getPoints(pts, MSpace::kObject);
+
+        // Build bounding box:
+        MBoundingBox bbox;
+        for (unsigned int i = 0; i < pts.length(); ++i)
+            bbox.expand(pts[i]);
+
+        faceBoxes.push_back( bbox);
+    }
+
+    return faceBoxes;
+}
+
+
+MStatus MyPluginCmd::collisonTest(MDagPath& dagPath0, MDagPath& dagPath1)
 {
     
     MStatus status;
-    // Get current selection list
-    MSelectionList selection;
-    MGlobal::getActiveSelectionList(selection);
-
-    // Check for exactly two items
-    if (selection.length() == 0) {
-        MGlobal::displayError("Please select mesh object");
-        return MS::kFailure;
-    }
-    // Get DagPaths for each selected item
-    MDagPath dagPath0;
-    selection.getDagPath(0, dagPath0);
-
 
     // Optionally verify they are mesh shapes
     MFnMesh fnMesh0(dagPath0, &status);
@@ -150,6 +180,8 @@ MStatus MyPluginCmd::collisonTest()
     }
 
 
+
+    
     // create an empty mesh data container
     MFnMeshData meshDataFn;
     MObject newMeshData = meshDataFn.create(&status);
@@ -162,9 +194,9 @@ MStatus MyPluginCmd::collisonTest()
     // work on the copy using MFnMesh and iterators
     MFnMesh fnMesh1(newMeshData, &status);
     if (!status) { MGlobal::displayError("Failed attach to copy mesh data"); return  MS::kFailure;; }
+    
 
-
-
+    //MFnMesh fnMesh1(dagPath1, &status);
 
 
 
@@ -213,12 +245,28 @@ MStatus MyPluginCmd::collisonTest()
     MGlobal::displayInfo("Mesh modified successfully.");
 
 
+    /*
+    auto abbox2 = buildFaceAABBs(dagPath0);
+    auto abbox = buildFaceAABBs(dagPath1);
+	std::unordered_map<int,MBoundingBox> colBB;
+    for (int i= 0; i < abbox.size(); ++i)
+    {
+        for (int j = 0; j < abbox2.size(); ++j)
+        {
+            if (abbox[i].intersects(abbox2[j]))
+            {
+                colBB[i] = abbox[i]
+                //MGlobal::displayInfo("AABB Intersection");
+            }
+		}
+    }
 
-
-
-
-
-
+    */
+    MMeshIntersector intersector;;
+    status = intersector.create(smoothMeshObj);
+    if (!status) {
+		MGlobal::displayError("Failed to create MMeshIntersector.");
+    }
     MItMeshVertex vertIt(dagPath0, MObject::kNullObj, &status);
     if (!status) {
         // Handle error
@@ -227,7 +275,8 @@ MStatus MyPluginCmd::collisonTest()
     MFloatVectorArray normals;
 	fnMesh0.getVertexNormals(false, normals, MSpace::kObject);
 
-
+    MPointArray Points;
+    fnMesh1.getPoints(Points, MSpace::kObject);
     //allIntersections flags
     MMeshIsectAccelParams accelParams;
     accelParams = fnMesh0.autoUniformGridParams();
@@ -239,6 +288,7 @@ MStatus MyPluginCmd::collisonTest()
     MIntArray hitTriangles;
     MFloatArray hitBary1;
     MFloatArray hitBary2;
+    MFloatPoint hitpoint;
     double bias = 1e-4;
     MPoint closePoint;
     MVector closeNormal;
@@ -250,13 +300,26 @@ MStatus MyPluginCmd::collisonTest()
         MPoint pos = vertIt.position(MSpace::kObject, &status);
         // do your work
 
+
+		MBoundingBox bbox;
+		MVector delta = MVector(0.1, 0.1, 0.1);
+        bbox.expand(pos + delta);
+		bbox.expand(pos - delta);
+        double dis = (Points[idx] - pos).length();
+        if(dis > 0.001)
+        {
+			//continue;
+		}
+
 		MFloatVector normal = -normals[idx];
-        auto raySource = MFloatPoint(pos[0]+ normal[0] * bias, pos[1] + normal[0] * bias, pos[2]+ normal[0]* bias, 1.0);
+        auto raySource = MFloatPoint(pos[0], pos[1], pos[2], 1.0);
 
         auto rayDir = MFloatVector(normal[0], normal[1], normal[2]);
         bool hit = fnMesh1.allIntersections(raySource, rayDir, NULL, NULL, false, MSpace::kObject, 99999, false, &accelParams, false,
             hitPoints, &hitRayParams, &hitFaces, &hitTriangles, &hitBary1, &hitBary2, 0.000001f);
 
+
+        
         if (hit)
         {
             //fnMesh0.getClosestPointAndNormal(pos, closePoint, closeNormal, MSpace::kWorld, NULL, NULL);
@@ -265,8 +328,16 @@ MStatus MyPluginCmd::collisonTest()
             //auto angle = delta * closeNormal;
             //MGlobal::displayInfo(std::to_string(hitFaces.length()).c_str());
 
-            fnMesh1.getClosestPointAndNormal(pos, closePoint, closeNormal, MSpace::kObject, NULL, NULL);
+            //fnMesh1.getClosestPointAndNormal(pos, closePoint, closeNormal, MSpace::kObject, NULL, NULL);
 
+            MPointOnMesh closest;
+            auto f = intersector.getClosestPoint(pos, closest);
+            if (f != MS::kSuccess)
+            {
+                continue;
+            }
+			closePoint = closest.getPoint();
+			closeNormal = closest.getNormal();
             auto delta = pos - closePoint;
             //collision check with dot product
             auto angle = delta * closeNormal;
@@ -274,6 +345,7 @@ MStatus MyPluginCmd::collisonTest()
             {
                 //MGlobal::displayInfo("Collision");
                 collisionPoints.push_back(pos);
+				collidedVertices.insert(idx);
 
                 for (int i = 0; i < 0; ++i)
                 {
@@ -290,7 +362,7 @@ MStatus MyPluginCmd::collisonTest()
 
                     
             }
-
+            
             /*
             if (hitFaces.length() > 1)
             {
@@ -324,9 +396,10 @@ MStatus MyPluginCmd::collisonTest()
                     }
 				}
             }
-            */
-           
+            
+           */
         }
+        
     }
     MGlobal::executeCommand("createNode myLocator");
 	MyLocatorDrawOverride::CDpoints = collisionPoints;
@@ -335,6 +408,90 @@ MStatus MyPluginCmd::collisonTest()
     MGlobal::displayInfo(std::to_string(collisionPoints.size()).c_str());
 }
 
+
+
+MStatus  MyPluginCmd::collisonTest2(MDagPath& dagPath0, MDagPath& dagPath1)
+{
+    MStatus status;
+
+    // Optionally verify they are mesh shapes
+    MFnMesh fnMesh0(dagPath0, &status);
+    if (!status) {
+        MGlobal::displayError("First selected object is not a mesh.");
+        return MS::kFailure;
+    }
+
+
+    MFnMesh fnMesh1(dagPath1, &status);
+
+    MItMeshVertex vertIt(dagPath0, MObject::kNullObj, &status);
+    if (!status) {
+        // Handle error
+    }
+    MItMeshPolygon faceIt(dagPath0, MObject::kNullObj, &status);
+    MFloatVectorArray normals;
+    fnMesh0.getVertexNormals(false, normals, MSpace::kObject);
+
+
+    //allIntersections flags
+    MMeshIsectAccelParams accelParams;
+    accelParams = fnMesh0.autoUniformGridParams();
+    bool sortHits = false;
+    float tolerance = 0.0001f;
+    MFloatPointArray hitPoints;
+    MFloatArray hitRayParams;
+    MIntArray hitFaces;
+    MIntArray hitTriangles;
+    MFloatArray hitBary1;
+    MFloatArray hitBary2;
+    double bias = 1e-4;
+    MPoint closePoint;
+    MVector closeNormal;
+    std::vector<MPoint> collisionPoints;
+    std::vector<MPointArray> collisionFaces;
+    for (; !vertIt.isDone(); vertIt.next()) {
+        int idx = vertIt.index(&status);
+
+        if(collidedVertices.find(idx) != collidedVertices.end())
+        {
+            continue;
+		}
+
+        // e.g. get position
+        MPoint pos = vertIt.position(MSpace::kObject, &status);
+        // do your work
+
+        MFloatVector normal = -normals[idx];
+        auto raySource = MFloatPoint(pos[0] + normal[0] * bias, pos[1] + normal[0] * bias, pos[2] + normal[0] * bias, 1.0);
+
+        auto rayDir = MFloatVector(normal[0], normal[1], normal[2]);
+        bool hit = fnMesh1.allIntersections(raySource, rayDir, NULL, NULL, false, MSpace::kObject, 99999, false, &accelParams, false,
+            hitPoints, &hitRayParams, &hitFaces, &hitTriangles, &hitBary1, &hitBary2, 0.000001f);
+
+        if (hit)
+        {
+
+            fnMesh1.getClosestPointAndNormal(pos, closePoint, closeNormal, MSpace::kObject, NULL, NULL);
+
+            auto delta = pos - closePoint;
+            //collision check with dot product
+            auto angle = delta * closeNormal;
+            if (angle < 0)
+            {
+                //MGlobal::displayInfo("Collision");
+                collisionPoints.push_back(pos);
+
+            }
+
+        }
+    }
+
+    MyLocatorDrawOverride::CDpoints = collisionPoints;
+    MyLocatorDrawOverride::CDfaces = collisionFaces;
+    MGlobal::displayInfo("Collision test executed.");
+    MGlobal::displayInfo(std::to_string(collisionPoints.size()).c_str());
+
+}
 
 bool MyPluginCmd::isPointInPlane(const MPoint& p, const MPoint& a, const MPoint& b, const MPoint& c)
 {

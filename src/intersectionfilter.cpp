@@ -403,7 +403,7 @@ std::set<int> IntersectionFilter::clalculateIntersections(MeshHandler& original,
 
 		if (hit)
 		{
-			fnMesh1.getClosestPointAndNormal(pos, closePoint, closeNormal, MSpace::kWorld, NULL, NULL);
+			fnMesh1.getClosestPointAndNormal(pos, closePoint, closeNormal, MSpace::kObject, NULL, NULL);
 			auto delta = pos - closePoint;
 			//collision check with dot product
 			auto angle = delta * closeNormal;
