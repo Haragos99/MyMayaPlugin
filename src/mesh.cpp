@@ -109,6 +109,19 @@ std::set<int>& MeshHandler::getConnectedVertices(int index)
 }
 
 
+void MeshHandler::initConectedVertexToFace()
+{
+	auto vertexIt = getVertexIterator(nullptr);
+    for (;!vertexIt->isDone(); vertexIt->next())
+    {
+		int vIdx = vertexIt->index();
+		MIntArray connectedFaces;
+		vertexIt->getConnectedFaces(connectedFaces);
+		m_vertexToFaces[vIdx] = connectedFaces;
+    }
+}
+
+
 void MeshHandler::initConnected()
 {
     m_connected.resize(m_fnMesh.numVertices());
@@ -147,18 +160,24 @@ void MeshHandler::initFaces()
 
     for (; !polyIt->isDone(); polyIt->next()) 
     {
+		FaceData faceData;
         int fIdx = polyIt->index(&status);
+		faceData.faceIndex = fIdx;
         MIntArray faceVerts;
         polyIt->getVertices(faceVerts);
+		faceData.vertexIndices = faceVerts;
+
+        MIntArray faceEdges;
+		polyIt->getEdges(faceEdges);
+		faceData.edgesIndices = faceEdges;
+
         m_faceToVerts[fIdx] = faceVerts;
         MIntArray cfaces;
         polyIt->getConnectedFaces(cfaces);
 		m_connected_face[fIdx] = cfaces;
     }
 
-
-
-
+	initConectedVertexToFace();
 }
 void MeshHandler::initEdges()
 {

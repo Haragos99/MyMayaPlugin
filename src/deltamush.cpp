@@ -95,6 +95,10 @@ void DeltaMush::CalculateDelta()
 	}
 	MGlobal::displayInfo("Delta successfully.");
 	MGlobal::displayInfo(std::to_string(deltas.size()).c_str());
+
+	IntersectionFilter filter(smooth);
+	m_filteredIndices = filter.filterFirstIntersections(m_mesh.getVertices(), m_mesh);
+	MGlobal::displayInfo("Defult filter successfully.");
 }
 
 MMatrix DeltaMush::initMatrix(MPoint point, MVector normal, MVector tangent, MVector bitangent)
@@ -226,8 +230,9 @@ void DeltaMush::improvedDM(MPointArray points)
 	auto start = std::chrono::high_resolution_clock::now();
 	MeshHandler smooth = smoothMesh(m_mesh, smoothIterion);
 	IntersectionFilter filter(smooth);
-	filter.clalculateIntersections(m_mesh.getVertices(), m_mesh);
+	filter.filterDefromIntersections(m_mesh.getVertices(), m_mesh, m_filteredIndices);
 	m_collisonData.collidedVertecesIdx = filter.vertexIndices;
+	m_collisonData.collidedFacesIdx = filter.fIndices;
 
 	Collison collison = Collison(deltas);
 	

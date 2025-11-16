@@ -29,6 +29,7 @@ private:
 	MeshHandler m_mesh;
 	MeshHandler m_smooth;
 	std::vector<MPoint> deltas;
+	std::set<int> m_filteredIndices;
 	MMatrix initMatrix(MPoint point, MVector normal, MVector tangent, MVector bitangent);
 	std::vector<MPoint> scaleDeltas(std::vector<MPoint> originalDeltas, float smooth);
 	void drawLine(const MPoint& p1, const MPoint& p2);

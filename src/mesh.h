@@ -12,11 +12,11 @@ struct MeshData {
 struct FaceData
 {
     int faceIndex;
-    std::set<int> vertexIndices;
-    std::set<int> edgesIndices;
+    MIntArray vertexIndices;
+    MIntArray edgesIndices;
 };
 
-
+// TODO checvk the copy constructor and assignment operator
 class MeshHandler {
 public:
     
@@ -76,11 +76,14 @@ public:
     void normalizeNormals();
 
     MPoint getNextPoint(int index);
-    void info();
-    MeshHandler createCopy();
-    void setMatrix(int idx, const MMatrix& C);
-    MObject getMeshObject();
 
+    void info();
+
+    MeshHandler createCopy();
+
+    void setMatrix(int idx, const MMatrix& C);
+    
+    MObject getMeshObject();
 
     MMeshIsectAccelParams getIntersectParameters() {return m_fnMesh.autoUniformGridParams();}
     // Utility Methods
@@ -88,12 +91,16 @@ public:
     ~MeshHandler(){}
    
 
+	void initConectedVertexToFace();
+
     MIntArray getConnectedFaces(int idx) { return m_connected_face[idx]; }
 
     bool intesectMesh(MPoint point, MVector rayDir);
 
 
     std::set<int> findIndicesWithValue(int value);
+
+	MIntArray getConnectedVertexFaces(int index) { return m_vertexToFaces[index]; }
 
 private:
     
@@ -118,7 +125,12 @@ private:
     std::vector<MMatrix> m_matrcesC;// refactor maybe
     std::unordered_map<int, MIntArray> m_nearby_faceToVerts;
 
+	std::vector<FaceData> m_facesData;
+
     std::unordered_map<int, MIntArray> m_connected_face;
+
+    std::unordered_map<int, MIntArray> m_vertexToFaces;
+
 
     std::unordered_map<int, std::pair<int, int>> m_nearby_edgeToVerts;
 
