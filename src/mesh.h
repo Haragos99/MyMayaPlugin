@@ -9,6 +9,14 @@ struct MeshData {
 };
 
 
+struct FaceData
+{
+    int faceIndex;
+    std::set<int> vertexIndices;
+    std::set<int> edgesIndices;
+};
+
+
 class MeshHandler {
 public:
     
@@ -25,7 +33,7 @@ public:
     const std::unordered_map<int, MIntArray>& getFacesIndices() const;
     const std::unordered_map<int, std::pair<int, int>>& getEdgesIndices() const;
 
-
+	MFloatVectorArray getMeshNormals();
 
     // Modifiers
     void setVertices(const MPointArray& points);

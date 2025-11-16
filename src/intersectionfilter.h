@@ -3,11 +3,11 @@
 class IntersectionFilter {
 	public:
 		IntersectionFilter(MeshHandler& target);
-		void clalculateIntersections(const MPointArray& original, const MPointArray& smooth, MeshHandler& target, MeshHandler& sm, CollisonData& data);
+		std::vector<MPoint> clalculateIntersections(const MPointArray& original, MeshHandler& target);
 		std::unordered_map<int, MIntArray> faceIndices;
 		std::set<int> vertexIndices;
 		std::set<int> edgeIndices;
-		std::set<int>findSelfCollidingTriangles(MeshHandler& target);
+		std::set<int> findSelfCollidingTriangles(MeshHandler& target);
 		std::set<int> clalculateIntersections(MeshHandler& original, MeshHandler& smooth);
 
 private:
@@ -15,6 +15,7 @@ private:
 	// create a distence change filte
 	MMeshIntersector m_intersector;
 	MObject meshDataObj;
+	MFnMesh meshFn;
 	bool areFacesAdjacent(std::shared_ptr<MItMeshPolygon> polyIter, int faceA, int faceB);
 	bool triangleIntersectsTriangle(const MPoint& v0, const MPoint& v1, const MPoint& v2,
 		const MPoint& u0, const MPoint& u1, const MPoint& u2,

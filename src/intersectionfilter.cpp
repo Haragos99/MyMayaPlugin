@@ -2,6 +2,7 @@
 #include <thread> 
 #include <tbb/parallel_for.h>
 #include <numeric>
+#include <fstream>
 
 IntersectionFilter::IntersectionFilter(MeshHandler& target)
 	: m_intersector()
@@ -15,7 +16,7 @@ IntersectionFilter::IntersectionFilter(MeshHandler& target)
 	// Create an in-memory mesh data container (not visible in the scene)
 	MFnMeshData meshDataFn;
 	meshDataObj = meshDataFn.create(&status);
-	MFnMesh meshFn;
+	meshFn;
 	MObject smoothMeshObj = meshFn.copy(meshObj, meshDataObj, &status);
 	auto dataPoints = target.getVertices();
 	meshFn.setPoints(dataPoints, MSpace::kObject);
@@ -28,169 +29,80 @@ IntersectionFilter::IntersectionFilter(MeshHandler& target)
 }
 
 
-void IntersectionFilter::clalculateIntersections(const MPointArray& original, const MPointArray& smooth, MeshHandler& target, MeshHandler& sm, CollisonData& data)
+std::vector<MPoint> IntersectionFilter::clalculateIntersections(const MPointArray& original,  MeshHandler& target)
 {
-	MGlobal::displayInfo(MString("VertexX: ") );
-	
+	MGlobal::displayInfo(MString("VertexX: "));
+	target.updateMesh();
+	//target.recalculateNormals();
 	double epsilon = 1e-6;
-	auto normlas = target.getNormals();
-	auto& facesIndices = target.getFacesIndices();
-	for (unsigned int i = 0; i < 0; ++i)
+	auto normlas = target.getMeshNormals();
+	std::ofstream file("C:/vectors.txt");
+	MMeshIsectAccelParams accelParams;
+	accelParams = target.getIntersectParameters();
+	bool sortHits = false;
+	float tolerance = 0.0001f;
+	MFloatPointArray hitPoints;
+	MFloatArray hitRayParams;
+	MIntArray hitFaces;
+	MIntArray hitTriangles;
+	MFloatArray hitBary1;
+	MFloatArray hitBary2;
+	MFloatPoint hitpoint;
+	double bias = 1e-4;
+	std::vector<MPoint> coints;
+	std::vector<int> collisionPoints;
+	auto vertIt = target.getVertexIterator(nullptr);
+	for (; !vertIt->isDone(); vertIt->next()) 
 	{
+		int i = vertIt->index();
+		MPoint p1 = original[i];    
+		MFloatVector normal = -normlas[i];
+		auto raySource = MFloatPoint(p1[0], p1[1], p1[2], 1.0);
 
-		const MPoint& p0 = smooth[i];  // t0
-		const MPoint& p1 = original[i];    // t1
-		auto pon = p1;
-		double motionDist = p0.distanceTo(p1);
+		auto rayDir = MFloatVector(normal[0], normal[1], normal[2]);
+		bool hit = meshFn.allIntersections(raySource, rayDir, NULL, NULL, false, MSpace::kObject, 99999, false, &accelParams, false,
+			hitPoints, &hitRayParams, &hitFaces, &hitTriangles, &hitBary1, &hitBary2, 0.000001f);
 
-		MPointOnMesh closest;
-		auto f = m_intersector.getClosestPoint(p1, closest);
-		if (f != MS::kSuccess)
+		if (hit)
 		{
-			continue;
-		}
-		auto closestPoint = closest.getPoint();
-		int faceidx = closest.faceIndex();
-
-		auto fa = facesIndices.at(faceidx);
-		MBoundingBox box;
-		std::set<int> edge;
-		MBoundingBox box2;
-
-		for(int vi : fa)
-		{
-			if(vi == i)
+			MPointOnMesh closest;
+			auto f = m_intersector.getClosestPoint(p1, closest);
+			if (f != MS::kSuccess)
 			{
 				continue;
 			}
-			MPoint otherPoint = target.getPoint(vi);
-			box.expand(otherPoint);
+			MPoint closestPoint = closest.getPoint();
+			MFloatVector closestnormal = closest.getNormal();
 
-			auto ed = target.findIndicesWithValue(vi);
-			edge.insert(ed.begin(), ed.end());
-
-			
-		}
-
-		
-		int connectedIdx = *target.getConnectedVertices(i).begin();
-		MPoint connectedPoint = target.getPoint(connectedIdx);
-
-		float scale = (connectedPoint - pon).length() / 1;
-
-		//MGlobal::displayInfo(MString("Scale: ") + scale);
-
-		MVector vectr = MVector(scale, scale, scale);
-		pon += vectr;
-		box2.expand(pon);
-		pon = original[i];
-		pon -= vectr;
-
-		box2.expand(pon);
-
-
-		double dist = p0.distanceTo(closest.getPoint());
-
-		double relativeDist = motionDist-dist;
-		//data.smoothmesh.push_back(box);
-		//data.mesh.push_back(box2);
-		if (box.intersects(box2))
-		{
-			auto ed = target.findIndicesWithValue(i);
-			edge.insert(ed.begin(), ed.end());
-			//data.intersected.push_back(box);
-			//vertexIndices.insert(i);
-			//faceIndices[faceidx] = fa;
-			//edgeIndices.insert(edge.begin(), edge.end());
-		}
-
-
-		if (relativeDist > 0.1)
-		{
-			//int faceIdx= closest.faceIndex();
-			int vertexIdx = i;
-			//.push_back(vertexIdx);
-			//faceIndices.push_back(faceIdx);
-			//MGlobal::displayInfo(MString("Vertex IDX: ") + i);
-		}
-		MVector normal = normlas[i];
-
-
-		//bool found = sm.intesectMesh(p1, -normal);
-
-		//if(found)
-		{
-			//vertexIndices.push_back(i);
-			//MGlobal::displayInfo(MString("Vertex IDX: ") + i);
-		}
-
-
-
-
-			
-	}
-	
-
-
-	for (auto face : sm.getFacesIndices())
-	{
-		MBoundingBox box;
-		box.expand(sm.getPoint(face.second[0]));
-		box.expand(sm.getPoint(face.second[1]));
-		box.expand(sm.getPoint(face.second[2]));
-		double factor = 1;
-		MPoint ctr = box.center();
-		MVector half = (box.max() - ctr);
-		half *= factor;
-		box = MBoundingBox(ctr - half, ctr + half);
-
-
-		data.smoothmesh.push_back(box);
-
-	}
-
-	float scale = 0.15;
-	for (auto face2 : target.getVerticesIndices())
-	{
-		MVector vectr = MVector(scale, scale, scale);
-		MBoundingBox box2;
-		auto p = target.getPoint(face2);
-		p += vectr;
-		box2.expand(p);
-		p = target.getPoint(face2);
-		p -= vectr;
-		box2.expand(p);
-
-		data.mesh.push_back(box2);
-	}
-
-	int i = 0;
-	for (auto b : data.mesh)
-	{
-		int j = 0;
-		for (auto b2 : data.smoothmesh)
-		{
-			if (b2.intersects(b))
+			auto delta = p1 - closestPoint;
+			//collision check with dot product
+			auto angle = delta * closestnormal;
+			if (angle <= 0)
 			{
-				data.intersected.push_back(b);
-				data.intersected.push_back(b2);
-				auto& f = facesIndices.at(j);
-				vertexIndices.insert(i);
-				faceIndices[j] = f;
-
+				collisionPoints.push_back(i);
+				coints.push_back(p1);
 			}
-			j++;
 		}
-		i++;
 	}
 
+	//std::set<int> allCollisionPoints;
+	for(const auto& idx : collisionPoints)
+	{
+		vertexIndices.insert(idx);
+		auto connect = target.getConnectedVertices(idx);
+		for(const auto& connectedIdx : connect)
+		{
+			vertexIndices.insert(connectedIdx);
+		}
+
+	}
 
 	MGlobal::displayInfo(
 		MString("Intersections calculated: ")
-		+ MString() + std::to_string(data.intersected.size()).c_str()
-		+ " Face: "
-		+ std::to_string(faceIndices.size()).c_str()
+		+ MString() + std::to_string(vertexIndices.size()).c_str()
 	);
+
+	return coints;
 }
 
 bool IntersectionFilter::isPointInPlane(const MPoint& p, const MPoint& a, const MPoint& b, const MPoint& c)
@@ -399,11 +311,11 @@ std::set<int> IntersectionFilter::clalculateIntersections(MeshHandler& original,
 
 		auto rayDir = MFloatVector(normal[0], normal[1], normal[2]);
 		bool hit = fnMesh1.allIntersections(raySource, rayDir, NULL, NULL, false, MSpace::kObject, 99999, false, &accelParams, false,
-			hitPoints, &hitRayParams, &hitFaces, &hitTriangles, &hitBary1, &hitBary2, tolerance);
+			hitPoints, &hitRayParams, &hitFaces, &hitTriangles, &hitBary1, &hitBary2, 0.000001f);
 
 		if (hit)
 		{
-			fnMesh1.getClosestPointAndNormal(pos, closePoint, closeNormal, MSpace::kObject, NULL, NULL);
+			fnMesh1.getClosestPointAndNormal(pos, closePoint, closeNormal, MSpace::kWorld, NULL, NULL);
 			auto delta = pos - closePoint;
 			//collision check with dot product
 			auto angle = delta * closeNormal;

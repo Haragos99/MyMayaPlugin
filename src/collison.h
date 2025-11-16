@@ -9,7 +9,7 @@ struct CollisonData {
 	std::set<int> collidedVertecesIdx;
 	std::set<int> collidedFacesIdx;
 	std::set<int> collidedEdgesIdx;
-
+	std::vector<MPoint> collidedPoints;
 	void clear() {
 		intersected.clear();
 		smoothmesh.clear();
@@ -17,6 +17,7 @@ struct CollisonData {
 		collidedVertecesIdx.clear();
 		collidedFacesIdx.clear();
 		collidedEdgesIdx.clear();
+		collidedPoints.clear();
 	}	
 };
 

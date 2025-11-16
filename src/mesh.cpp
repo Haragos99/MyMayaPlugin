@@ -84,8 +84,6 @@ void MeshHandler::collectVerticesNearPoint(const MPoint& origin, double threshol
         }
 	}
 
-
-
     MGlobal::displayInfo(MString("Found ") + (int)nearbyVertices.size() + " vertices near point. "+"Faces: "+ (int)m_nearby_faceToVerts.size() + " Edges: " + (int)m_nearby_edgeToVerts.size());
 }
 
@@ -96,7 +94,6 @@ MeshHandler::MeshHandler(const MObject& mesh) : m_fnMesh (mesh)
     m_fnMesh.getTangents(m_tangents);
 
     m_fnMesh.getBinormals(m_binormals);
-
 
     int se = m_verticesCounts.length();
     int te = m_verticesIndices.length();
@@ -135,17 +132,11 @@ void MeshHandler::initConnected()
 // Create a new MObject representing the mesh with updated vertices
 MObject MeshHandler::getMeshObject()
 {
-
     MStatus status;
 
     // Create an in-memory mesh data container (not visible in the scene)
-    MFnMeshData meshDataFn;
-    MObject meshDataObj = meshDataFn.create(&status);
     MObject sourceMeshObj = m_fnMesh.object();
     return sourceMeshObj;
-
-
-
 }
 
 
@@ -298,28 +289,19 @@ MeshHandler& MeshHandler::operator=(const MeshHandler& other) {
 }
 
 
+MFloatVectorArray MeshHandler::getMeshNormals()
+{
+    MFloatVectorArray normals;
+    MStatus status = m_fnMesh.getVertexNormals(false, normals, MSpace::kObject);
+    if (!status) {
+        MGlobal::displayError("Failed to get mesh normals.");
+    }
+	return normals;
+}
 
 bool MeshHandler::intesectMesh(MPoint point, MVector rayDir)
 {
-    /*
-    if (rayDir.length() < 1e-6) {
-        rayDir = MVector(0.0, 0.0, 1.0); // fallback
-    }
-    rayDir.normalize();
-    MPointArray hitPoints;
-    double tolerance = 0.0; // or small positive
-    MIntArray polyIds;
-    MStatus status;
-    bool hit = m_fnMesh.intersect(point,
-        rayDir,
-        hitPoints,
-        tolerance,
-        MSpace::kWorld,
-        &polyIds,
-        &status);
 
-	int numHits = hitPoints.length();
-    */
 
     MFloatVector directions[] = {
     MFloatVector(1, 0, 0), MFloatVector(0, 1, 0), MFloatVector(0, 0, 1),
@@ -328,9 +310,6 @@ bool MeshHandler::intesectMesh(MPoint point, MVector rayDir)
     };
     int numRays = 5;
     int insideVoteCount = 0;
-
-
-
 
     MFloatPointArray hitPoints;       // Stores the locations of all hits
 

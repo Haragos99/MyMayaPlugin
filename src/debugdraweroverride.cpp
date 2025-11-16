@@ -112,6 +112,14 @@ void MyLocatorDrawOverride::addUIDrawables(
             MPoint p2 = points[edgeVerts.second];
 		    drawManager.line(p1, p2);
         }
+
+
+        for (auto& p : collisonData.collidedPoints)
+        {
+            drawManager.setPointSize(10.0f);
+            drawManager.setColor(MColor(0.0f, 0.0f, 1.0f));
+            drawManager.point(p);
+        }
    }
     // Draw green line
     drawManager.setColor(MColor(0.0f, 1.0f, 0.0f));
