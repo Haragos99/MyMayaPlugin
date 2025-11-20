@@ -137,6 +137,8 @@ MStatus DeltaMushNode::deform(MDataBlock& data,
     float smoothing = data.inputValue(aSmoothing, &status).asFloat();
 	bool enableDebug = data.inputValue(aEnableDebug, &status).asBool();
 	int counter = data.inputValue(aCounter, &status).asInt();
+
+    
     MPointArray points;
     if(enableDeltamush)
     {

@@ -171,6 +171,7 @@ void MeshHandler::initFaces()
 		polyIt->getEdges(faceEdges);
 		faceData.edgesIndices = faceEdges;
 
+		m_facesData.push_back(faceData);
         m_faceToVerts[fIdx] = faceVerts;
         MIntArray cfaces;
         polyIt->getConnectedFaces(cfaces);
@@ -307,7 +308,6 @@ MeshHandler& MeshHandler::operator=(const MeshHandler& other) {
     return *this;
 }
 
-
 MFloatVectorArray MeshHandler::getMeshNormals()
 {
     MFloatVectorArray normals;
@@ -409,6 +409,72 @@ MPointArray MeshHandler::getTrianglePoints(int faceIndex)
 
 	return trianglePoints;
 }
+
+
+// Compute per-vertex normals by accumulating face normals (area-weighted).
+MFloatVectorArray MeshHandler::computePerVertexNormals()
+{
+    MStatus status;
+    MFloatVectorArray outVertexNormals;
+
+    unsigned int vcount = (unsigned int)m_vertices.length();
+    // Get polygon vertex counts and connects
+
+
+    // Prepare accumulation arrays
+    std::vector<MVector> accum(vcount, MVector::zero);
+
+    // Walk faces, compute face normal and accumulate to its vertices
+    unsigned int connectIndex = 0;
+    for (unsigned int face = 0; face < (unsigned int)m_verticesCounts.length(); ++face) 
+    {
+        int nVerts = m_verticesCounts[face];
+        if (nVerts < 3) {
+            connectIndex += nVerts;
+            continue;
+        }
+
+        // take first triangle fan (0, i, i+1)
+        MVector faceNormal(0.0, 0.0, 0.0);
+        for (int i = 1; i < nVerts - 1; ++i) 
+        {
+
+            unsigned int idx0 = m_verticesIndices[connectIndex + 0];
+            unsigned int idx1 = m_verticesIndices[connectIndex + i];
+            unsigned int idx2 = m_verticesIndices[connectIndex + i + 1];
+
+            MVector v0 = MVector(m_vertices[idx0].x, m_vertices[idx0].y, m_vertices[idx0].z);
+            MVector v1 = MVector(m_vertices[idx1].x, m_vertices[idx1].y, m_vertices[idx1].z);
+            MVector v2 = MVector(m_vertices[idx2].x, m_vertices[idx2].y, m_vertices[idx2].z);
+
+            MVector e1 = v1 - v0;
+            MVector e2 = v2 - v0;
+            MVector triNormal = e1 ^ e2; // cross product (area-weighted)
+            // accumulate triNormal to faceNormal (optional, but we will also add per-vertex)
+            faceNormal += triNormal;
+
+            // accumulate triangle normal to each triangle vertex (area-weighted)
+            accum[idx0] += triNormal;
+            accum[idx1] += triNormal;
+            accum[idx2] += triNormal;
+        }
+
+        connectIndex += nVerts;
+    }
+
+    // normalize accum into outVertexNormals
+    outVertexNormals.clear();
+    outVertexNormals.setLength(vcount);
+    for (unsigned int v = 0; v < vcount; ++v) 
+    {
+        MVector n = accum[v];
+        if (n.length() > 1e-8) n.normalize();
+        outVertexNormals[v] = MFloatVector((float)n.x, (float)n.y, (float)n.z);
+    }
+
+    return outVertexNormals;
+}
+
 
 std::shared_ptr<MItMeshVertex> MeshHandler::getVertexIterator(MStatus* status ) const
 {

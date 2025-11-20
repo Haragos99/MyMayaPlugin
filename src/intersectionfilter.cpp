@@ -7,7 +7,9 @@
 IntersectionFilter::IntersectionFilter(MeshHandler& target)
 	: m_intersector()
 {
+	//target.recalculateNormals();
 	target.updateMesh();
+	auto normals = target.computePerVertexNormals();
 	// Initialize the intersector with the mesh object
 	auto meshObj = target.getMeshObject();
 
@@ -20,7 +22,7 @@ IntersectionFilter::IntersectionFilter(MeshHandler& target)
 	MObject smoothMeshObj = meshFn.copy(meshObj, meshDataObj, &status);
 	auto dataPoints = target.getVertices();
 	meshFn.setPoints(dataPoints, MSpace::kObject);
-
+	//meshFn.setNormals(normals, MSpace::kObject);
 	status = m_intersector.create(smoothMeshObj);
 	if (!status) {
 		MGlobal::displayError("Failed to create MMeshIntersector.");
@@ -43,16 +45,25 @@ std::set<int> IntersectionFilter::filterDefromIntersections(const MPointArray& o
 		}
 	}
 
-
 	for (const auto& idx : vertexIndices)
 	{
 		MIntArray faceID = target.getConnectedVertexFaces(idx);
 		for (int i : faceID)
 		{
 			fIndices.insert(i);
+			MIntArray conID = target.getConnectedFaces(i);
+			for (int j : conID)
+			{
+				fIndices.insert(j);
+				MIntArray bonID = target.getConnectedFaces(j);
+				for (int k : bonID)
+				{
+					fIndices.insert(k);
+				}
+
+			}
 		}
 	}
-
 
 	MGlobal::displayInfo(
 		MString("Intersections calculated: ")
@@ -78,7 +89,7 @@ std::set<int> IntersectionFilter::filterFirstIntersections(const MPointArray& or
 std::set<int> IntersectionFilter::clalculateIntersections(const MPointArray& original, MeshHandler& target, std::set<int> filtered)
 {
 	target.updateMesh();
-	//target.recalculateNormals();
+	target.recalculateNormals();
 	double epsilon = 1e-6;
 	auto normlas = target.getMeshNormals();
 	MMeshIsectAccelParams accelParams;

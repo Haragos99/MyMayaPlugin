@@ -13,7 +13,7 @@ DeltaMush::DeltaMush(MDagPath& dagPath) : m_mesh(dagPath)
 
 
 
-MeshHandler DeltaMush::smoothMesh(MeshHandler mesh,int iterations)
+MeshHandler DeltaMush::smoothMesh(MeshHandler mesh,int iterations, bool saveSmooth)
 {
 	MStatus status;
 	double smoothingFactor = 0.5;
@@ -46,7 +46,11 @@ MeshHandler DeltaMush::smoothMesh(MeshHandler mesh,int iterations)
 	}
 	mesh.setVertices(currentPoints);
 	MGlobal::displayInfo("sss");
-	m_smooth = mesh;
+	if (saveSmooth)
+	{
+		m_smooth = mesh;
+	}
+
 	return mesh;
 }
 
@@ -228,21 +232,52 @@ void DeltaMush::improvedDM(MPointArray points)
 
 
 	auto start = std::chrono::high_resolution_clock::now();
-	MeshHandler smooth = smoothMesh(m_mesh, smoothIterion);
+	MeshHandler smooth = smoothMesh(m_mesh, smoothIterion, false);
 	IntersectionFilter filter(smooth);
 	filter.filterDefromIntersections(m_mesh.getVertices(), m_mesh, m_filteredIndices);
-	m_collisonData.collidedVertecesIdx = filter.vertexIndices;
-	m_collisonData.collidedFacesIdx = filter.fIndices;
+	//m_collisonData.collidedVertecesIdx = filter.vertexIndices;
+	//m_collisonData.collidedFacesIdx = filter.fIndices;
+
+	std::unordered_map<int, std::pair<int, int>> edIDX;
+	std::unordered_map<int, MIntArray> facesIDX;
+	std::set<int> vertexesIDX;
+
+	
+	//todo filter  more data
+	auto& faceData = m_mesh.getFacesData();
+
+	for (int face : filter.fIndices)
+	{
+		auto faceVerts = m_mesh.getFacesIndices().at(face);
+		facesIDX[face] = faceVerts;
+		auto& edges = faceData[face].edgesIndices;
+		auto& verteses = faceData[face].vertexIndices;
+
+		vertexesIDX.insert(verteses.begin(), verteses.end());
+
+		for(int edgeIdx : edges)
+		{
+			edIDX[edgeIdx] = m_mesh.getEdgesIndices().at(edgeIdx);
+		}
+
+
+	}
+	
+
 
 	Collison collison = Collison(deltas);
 	
-	collison.edgesIDX = m_mesh.getNearbyEdges();
-	collison.facesIDX = m_mesh.getNearbyFaces();
-	collison.vertexesIDX = m_mesh.getNearbyVertices();
+	collison.edgesIDX = edIDX;
+	collison.facesIDX = facesIDX;
+	collison.vertexesIDX = vertexesIDX;
+
+	//m_collisonData.collidedVertecesIdx = vertexesIDX;
+	
+
 	//m_collisonData.collidedFacesIdx = filter.findSelfCollidingTriangles(m_mesh);
 	//m_collisonData.collidedVertecesIdx = filter.clalculateIntersections(m_mesh,m_smooth);
 
-	/*
+	
 	MGlobal::displayInfo(std::to_string(m_collisonData.intersected.size()).c_str());
 	while(collison.collisondetec(m_mesh, m_smooth, m_collisonData))
 	{
@@ -252,7 +287,9 @@ void DeltaMush::improvedDM(MPointArray points)
 		int percent = alfa * 100;
 		collison.setAlfa(0);
 	}
-	*/
+	
+	
+	
 	auto end = std::chrono::high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 

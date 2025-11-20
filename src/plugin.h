@@ -18,6 +18,9 @@ private:
     bool isPointInTriangle(const MPoint& p, const MPoint& a, const MPoint& b, const MPoint& c);
     std::set<int> collidedVertices;
     double mixed(MVector& a, MVector& b, MVector& c);
+    MStatus THecollisonTest3(MDagPath& dagPath0);
+    MStatus collison(MDagPath& dagPath0, MDagPath& dagPath1);
+    MeshHandler smoothMesh(MeshHandler mesh, int iterations);
 
 public:
     MStatus doIt(const MArgList&) override;

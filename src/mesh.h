@@ -83,13 +83,13 @@ public:
 
     void setMatrix(int idx, const MMatrix& C);
     
+    MFloatVectorArray computePerVertexNormals();
+
     MObject getMeshObject();
 
     MMeshIsectAccelParams getIntersectParameters() {return m_fnMesh.autoUniformGridParams();}
     // Utility Methods
     void updateMesh(); // Apply changes to the mesh
-    ~MeshHandler(){}
-   
 
 	void initConectedVertexToFace();
 
@@ -97,10 +97,13 @@ public:
 
     bool intesectMesh(MPoint point, MVector rayDir);
 
+	std::vector<FaceData>& getFacesData() { return m_facesData; }
 
     std::set<int> findIndicesWithValue(int value);
 
 	MIntArray getConnectedVertexFaces(int index) { return m_vertexToFaces[index]; }
+
+    ~MeshHandler() = default;
 
 private:
     
@@ -118,6 +121,8 @@ private:
     MFloatVectorArray m_tangents;
     MIntArray m_verticesCounts; //The number of vertices for each polygon.
     MIntArray m_verticesIndices; //The indices of all vertices in the mesh
+
+    // refactor it should handel a diffrent class
     std::vector<std::set<int>> m_connected;
     std::unordered_map<int, MIntArray> m_faceToVerts;
     std::unordered_map<int, std::pair<int,int>> m_edgeToVerts;
