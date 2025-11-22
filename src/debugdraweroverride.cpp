@@ -45,6 +45,35 @@ void MyLocatorDrawOverride::addUIDrawables(
 
 
 
+		auto& smoothpoints = smoothmesh.getVertices();
+		auto& smoothfaceesIDX = smoothmesh.getFacesIndices();
+
+
+
+        for (auto v : smoothpoints)
+        {
+            //drawManager.setPointSize(8.0f);
+            //drawManager.setColor(MColor(0.0f, 1.0f, 1.0f));
+            //drawManager.point(v);
+        }
+
+
+        for (auto f : smoothfaceesIDX)
+        {
+            drawManager.setColor(MColor(1.0f, 1.0f, 0.0f));
+            auto faceVerts = f.second;
+            MPointArray face;
+            for (int i : faceVerts)
+            {
+                face.append(smoothpoints[i]);
+            }
+
+            drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, face);
+
+        }
+
+
+
         // Draw red point
         drawManager.setColor(MColor(1.0f, 0.0f, 0.0f));
         drawManager.point(MPoint(0.0, 0.0, 0.0));

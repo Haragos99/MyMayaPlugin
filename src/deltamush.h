@@ -33,4 +33,6 @@ private:
 	MMatrix initMatrix(MPoint point, MVector normal, MVector tangent, MVector bitangent);
 	std::vector<MPoint> scaleDeltas(std::vector<MPoint> originalDeltas, float smooth);
 	void drawLine(const MPoint& p1, const MPoint& p2);
+	void smoothCollidedVertices(std::set<int>& collededVertexes);
+	void projectPointToPlane(const MPoint& P, const MVector& N, MPoint& Q);
 };

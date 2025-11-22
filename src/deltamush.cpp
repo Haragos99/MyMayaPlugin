@@ -236,7 +236,7 @@ void DeltaMush::improvedDM(MPointArray points)
 	IntersectionFilter filter(smooth);
 	filter.filterDefromIntersections(m_mesh.getVertices(), m_mesh, m_filteredIndices);
 	//m_collisonData.collidedVertecesIdx = filter.vertexIndices;
-	//m_collisonData.collidedFacesIdx = filter.fIndices;
+	m_collisonData.collidedFacesIdx = filter.fIndices;
 
 	std::unordered_map<int, std::pair<int, int>> edIDX;
 	std::unordered_map<int, MIntArray> facesIDX;
@@ -288,8 +288,8 @@ void DeltaMush::improvedDM(MPointArray points)
 		collison.setAlfa(0);
 	}
 	
-	
-	
+	m_collisonData.collidedVertecesIdx = collison.vertexes;
+	smoothCollidedVertices(collison.vertexes);
 	auto end = std::chrono::high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
@@ -334,4 +334,41 @@ void DeltaMush::CCDDeformation()
 		deformedPoints.append(defomedpoint);
 	}
 	m_mesh.setVertices(deformedPoints);
+}
+
+void DeltaMush::projectPointToPlane(const MPoint& P, const MVector& N, MPoint& Q)
+{
+	MVector norm = N;
+	norm.normalize();
+
+	// distance between the pointand the plane
+	float d = (P - Q) * norm;
+
+	//  projected point
+	Q = Q - (d * norm);
+}
+
+void DeltaMush::smoothCollidedVertices(std::set<int>& collededVertexes)
+{
+	float smootingfactor = 0.4;
+	auto& normal = m_mesh.getNormals();
+	for (int i = 0; i < 2; i++)
+	{
+		for (auto v : collededVertexes)
+		{
+			auto actualpoint = m_mesh.getPoint(v);
+			MVector Avg;
+			int n = 0;
+			for (auto vi : m_mesh.getConnectedVertices(v)) {
+
+				auto point = m_mesh.getPoint(vi);
+				projectPointToPlane(actualpoint, normal[v], point);
+				Avg += point;
+				n++;
+			}
+			Avg /= n;
+			actualpoint += smootingfactor * (Avg - actualpoint);
+			m_mesh.setPoint(v, actualpoint);
+		}
+	}
 }

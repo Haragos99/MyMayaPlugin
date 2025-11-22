@@ -51,7 +51,7 @@ bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth, CollisonDat
     int pointsCount = mesh.getVertices().length();
     auto& faceIndices = mesh.getNearbyFaces();
     //auto& edgeIndices = mesh.getEdgesIndices();
-    
+    MGlobal::displayInfo("Start VF");
     for (int vertexIdx : vertexesIDX)
     {
         if (deltas[vertexIdx].isCollied)
@@ -93,6 +93,11 @@ bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth, CollisonDat
             );
             if (iscollied) 
             {
+                vertexes.insert(vertexIdx);
+                for (int i : faceVertecesIdx)
+                {
+                    vertexes.insert(i);
+                }
                 tois.push_back(toi);
                 if (toi < smallestTio)
                 {
@@ -108,7 +113,7 @@ bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth, CollisonDat
         }
     }
 
-    
+    MGlobal::displayInfo("Start EE");
     for (auto edge : edgesIDX)
     {
 
@@ -157,6 +162,13 @@ bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth, CollisonDat
 
             if (is_colliding) {
 
+
+
+                vertexes.insert(edgesidx2.first);
+                vertexes.insert(edgesidx2.second);
+
+                vertexes.insert(edgesidx.first);
+                vertexes.insert(edgesidx.second);
                 if (toi < smallestTio)
                 {
                     smallestTio = toi;
@@ -264,8 +276,8 @@ void Collison::setSmalest(int vertexIdx, int f, int edegs, int edegs2,MeshHandle
             deltas[pointIdx].isCollied = true;
             setMeshTio(pointIdx, mesh);
         }
-		data.collidedVertecesIdx.insert(vertexIdx);
-		data.collidedFacesIdx.insert(f);
+		//data.collidedVertecesIdx.insert(vertexIdx);
+		//data.collidedFacesIdx.insert(f);
 	}
 
 

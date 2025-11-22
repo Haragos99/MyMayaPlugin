@@ -53,6 +53,7 @@ public:
 	std::set<int> vertexesIDX;
 	std::unordered_map<int, std::pair<int, int>> edgesIDX;
 	std::unordered_map<int, MIntArray> facesIDX;
+	std::set<int> vertexes;
 
 private:
 	Eigen::Vector3f toEigenVec(const MPoint v) {
@@ -65,6 +66,7 @@ private:
 	std::vector<Delta> deltas;
 	Eigen::Vector3f err = Eigen::Vector3f(-1, -1, -1);  // Error bounds
 
+	
 	float tmax;
 	float tmaxiter;
 	float tolerance;
