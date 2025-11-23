@@ -3,15 +3,13 @@
 #include "intersectionfilter.h"
 #include <tbb/parallel_for.h>
 
-
 DeltaMush::DeltaMush(MDagPath& dagPath) : m_mesh(dagPath)
 {
 	smoothIterion = 20;
 	deltaMushFactor = 1.0f;
+	strength = 0.5f;
 	m_mesh.collectVerticesNearPoint(MPoint(0, 0, 0),1.8);
 }
-
-
 
 MeshHandler DeltaMush::smoothMesh(MeshHandler mesh,int iterations, bool saveSmooth)
 {
@@ -116,7 +114,6 @@ MMatrix DeltaMush::initMatrix(MPoint point, MVector normal, MVector tangent, MVe
 	return M;
 }
 
-
 std::vector<MPoint> DeltaMush::scaleDeltas(std::vector<MPoint> originalDeltas, float smooth)
 {
 	std::to_string(smooth);
@@ -131,29 +128,33 @@ std::vector<MPoint> DeltaMush::scaleDeltas(std::vector<MPoint> originalDeltas, f
 	return originalDeltas;
 }
 
-
-
 void DeltaMush::debugCCD(int itertion, MPointArray points)
 {
+	m_collisonData.clear();
 	m_mesh.setVertices(points);
 	MGlobal::displayInfo("Start Debugg");
 	CalculateDeformation();
 	Collison collison = Collison(deltas);
-	auto smooth = smoothMesh(m_mesh, smoothIterion);
-	smooth.recalculateNormals();
+	auto smooth = smoothMesh(m_mesh, smoothIterion, false);
+	IntersectionFilter filter(smooth);
+	filter.filterDefromIntersections(m_mesh.getVertices(), m_mesh, m_filteredIndices);
+	filter.initFilteredData(m_mesh);
+	filter.separateFilteredData(collison);
+
 	int i = 0;
-	while(i < itertion)
+	while(collison.collisondetec(m_mesh, m_smooth, m_collisonData) && i < itertion)
 	{
-		MGlobal::displayInfo("Iter");
-		//collison.collisondetec(m_mesh, smooth);
-		//CalculateDeformation();
+		MGlobal::displayInfo("Iter: ");
+
+		CCDDeformation();
 		float alfa = collison.getAlfa();
 		int percent = alfa * 100;
 		collison.setAlfa(0);
-		i++;
+		++i;
 	}
+	smoothCollidedVertices(collison.vertexes);
+	m_mesh.updateMesh();
 }
-
 
 void DeltaMush::CalculateDeformation()
 {
@@ -194,21 +195,6 @@ void DeltaMush::CalculateDeformation()
 		deformedPoints.append(defomedpoint);
 	}
 	m_mesh.setVertices(deformedPoints);
-	//m_mesh.updateMesh();
-}
-
-// Implementation of line drawing using legacy OpenGL
-void DeltaMush::drawLine(const MPoint& p1, const MPoint& p2)
-{
-
-}
-
-
-void DeltaMush::move()
-{
-	auto smooth = smoothMesh(m_mesh, 1);
-	m_mesh = smooth;
-	
 }
 
 void DeltaMush::test(MPointArray points)
@@ -224,12 +210,10 @@ void DeltaMush::test(MPointArray points)
 
 void DeltaMush::improvedDM(MPointArray points)
 {
-	
 	m_mesh.setVertices(points);
 	MGlobal::displayInfo("Start");
 	CalculateDeformation();
 	m_collisonData.clear();
-
 
 	auto start = std::chrono::high_resolution_clock::now();
 	MeshHandler smooth = smoothMesh(m_mesh, smoothIterion, false);
@@ -237,51 +221,15 @@ void DeltaMush::improvedDM(MPointArray points)
 	filter.filterDefromIntersections(m_mesh.getVertices(), m_mesh, m_filteredIndices);
 	//m_collisonData.collidedVertecesIdx = filter.vertexIndices;
 	m_collisonData.collidedFacesIdx = filter.fIndices;
-
-	std::unordered_map<int, std::pair<int, int>> edIDX;
-	std::unordered_map<int, MIntArray> facesIDX;
-	std::set<int> vertexesIDX;
-
-	
-	//todo filter  more data
-	auto& faceData = m_mesh.getFacesData();
-
-	for (int face : filter.fIndices)
-	{
-		auto faceVerts = m_mesh.getFacesIndices().at(face);
-		facesIDX[face] = faceVerts;
-		auto& edges = faceData[face].edgesIndices;
-		auto& verteses = faceData[face].vertexIndices;
-
-		vertexesIDX.insert(verteses.begin(), verteses.end());
-
-		for(int edgeIdx : edges)
-		{
-			edIDX[edgeIdx] = m_mesh.getEdgesIndices().at(edgeIdx);
-		}
-
-
-	}
-	
-
-
 	Collison collison = Collison(deltas);
-	
-	collison.edgesIDX = edIDX;
-	collison.facesIDX = facesIDX;
-	collison.vertexesIDX = vertexesIDX;
+	filter.initFilteredData(m_mesh);
+	filter.separateFilteredData(collison);
 
 	//m_collisonData.collidedVertecesIdx = vertexesIDX;
-	
-
-	//m_collisonData.collidedFacesIdx = filter.findSelfCollidingTriangles(m_mesh);
-	//m_collisonData.collidedVertecesIdx = filter.clalculateIntersections(m_mesh,m_smooth);
-
 	
 	MGlobal::displayInfo(std::to_string(m_collisonData.intersected.size()).c_str());
 	while(collison.collisondetec(m_mesh, m_smooth, m_collisonData))
 	{
-		//collison.collisondetec(m_mesh, smooth);
 		CCDDeformation();
 		float alfa = collison.getAlfa();
 		int percent = alfa * 100;
@@ -296,8 +244,6 @@ void DeltaMush::improvedDM(MPointArray points)
 	MGlobal::displayInfo(MString("Execution time: ") + duration + " ms");
 	m_mesh.updateMesh();
 }
-
-
 
 void DeltaMush::CCDDeformation()
 {
@@ -336,6 +282,7 @@ void DeltaMush::CCDDeformation()
 	m_mesh.setVertices(deformedPoints);
 }
 
+// TODO: reftor this function nopt Delta msuh resposible for projection
 void DeltaMush::projectPointToPlane(const MPoint& P, const MVector& N, MPoint& Q)
 {
 	MVector norm = N;
@@ -344,13 +291,12 @@ void DeltaMush::projectPointToPlane(const MPoint& P, const MVector& N, MPoint& Q
 	// distance between the pointand the plane
 	float d = (P - Q) * norm;
 
-	//  projected point
+	// projected point
 	Q = Q - (d * norm);
 }
 
 void DeltaMush::smoothCollidedVertices(std::set<int>& collededVertexes)
 {
-	float smootingfactor = 0.4;
 	auto& normal = m_mesh.getNormals();
 	for (int i = 0; i < 2; i++)
 	{
@@ -367,7 +313,7 @@ void DeltaMush::smoothCollidedVertices(std::set<int>& collededVertexes)
 				n++;
 			}
 			Avg /= n;
-			actualpoint += smootingfactor * (Avg - actualpoint);
+			actualpoint += strength * (Avg - actualpoint);
 			m_mesh.setPoint(v, actualpoint);
 		}
 	}

@@ -15,6 +15,7 @@ public:
     static MObject aEnableDeltamush; // Boolean attribute handle
     static MObject aSmoothing;       //  float slider
 	static MObject aCounter; 	 //  int 
+    static MObject aStrength; 	 //  float slider
     static MObject aEnableDebug;
     static MTypeId id;
     // --- Overridden methods ---

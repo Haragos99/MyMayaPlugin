@@ -10,11 +10,11 @@ public:
 	void CalculateDelta();
 	void CalculateDeformation();
 	void CCDDeformation();
-	void move();
 	void debugCCD(int itertion, MPointArray points);
 	void test(MPointArray points);
 	void improvedDM(MPointArray points);
-	void setDeltaMushFactor(float factor) { deltaMushFactor = factor/100; }
+	void setDeltaMushFactor(float factor) { deltaMushFactor = factor / 100; }
+	void setStrength(float str) { strength = str; }
 	float getDeltaMushFactor() { return deltaMushFactor; }
 	MPointArray getPoints() { return m_mesh.getVertices(); }
 	CollisonData& getCollisonData() { return m_collisonData; }
@@ -25,6 +25,7 @@ public:
 private:
 	CollisonData m_collisonData;
 	float deltaMushFactor;
+	float strength;
 	int smoothIterion;
 	MeshHandler m_mesh;
 	MeshHandler m_smooth;
@@ -32,7 +33,6 @@ private:
 	std::set<int> m_filteredIndices;
 	MMatrix initMatrix(MPoint point, MVector normal, MVector tangent, MVector bitangent);
 	std::vector<MPoint> scaleDeltas(std::vector<MPoint> originalDeltas, float smooth);
-	void drawLine(const MPoint& p1, const MPoint& p2);
 	void smoothCollidedVertices(std::set<int>& collededVertexes);
 	void projectPointToPlane(const MPoint& P, const MVector& N, MPoint& Q);
 };

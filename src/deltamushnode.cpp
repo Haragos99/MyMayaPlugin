@@ -8,6 +8,7 @@ MObject DeltaMushNode::aEnableDeltamush;
 MObject DeltaMushNode::aSmoothing;
 MObject DeltaMushNode::aCounter;
 MObject DeltaMushNode::aEnableDebug;
+MObject DeltaMushNode::aStrength;
 
 // --- Attribute initialization ---
 MStatus DeltaMushNode::initialize()
@@ -42,9 +43,6 @@ MStatus DeltaMushNode::initialize()
 
     // Ensure Maya knows the attribute affects the output geometry
     attributeAffects(aEnableDeltamush, outputGeom);
-
-
-
 
 
     //  Create a boolean attribute
@@ -87,7 +85,17 @@ MStatus DeltaMushNode::initialize()
 
     attributeAffects(aCounter, outputGeom);
 
+    // Strength  (float slider)
+    aStrength = nAttr.create("strength", "st", MFnNumericData::kFloat, 0.5f);
+    nAttr.setMin(0.0f);     // slider min
+    nAttr.setMax(1.0f);    // slider max
+    nAttr.setKeyable(true);
+    nAttr.setStorable(true);
+    nAttr.setReadable(true);
+    nAttr.setWritable(true);
+    addAttribute(aStrength);
 
+    attributeAffects(aStrength, outputGeom);
 
     return MS::kSuccess;
 }
@@ -116,7 +124,7 @@ MStatus DeltaMushNode::setDependentsDirty(const MPlug& plugBeingDirtied, MPlugAr
         int counter = 0;
         plugBeingDirtied.getValue(counter); // works because it's a numeric attribute
         // Call your custom method
-		g_deltamushCache->debugCCD(counter, g_deltamushCache->getPoints());
+		//g_deltamushCache->debugCCD(counter, g_deltamushCache->getPoints());
         MGlobal::displayInfo(MString("Counter changed to: ") + counter);
         
 	}
@@ -138,32 +146,31 @@ MStatus DeltaMushNode::deform(MDataBlock& data,
 	bool enableDebug = data.inputValue(aEnableDebug, &status).asBool();
 	int counter = data.inputValue(aCounter, &status).asInt();
 
+	float strength = data.inputValue(aStrength, &status).asFloat();
     
     MPointArray points;
     if(enableDeltamush)
     {
         if (g_deltamushCache != nullptr)
         {
-
             g_deltamushCache->setDeltaMushFactor(smoothing);
             itGeo.allPositions(points);
             if (enableFeature)
             {
+				g_deltamushCache->setStrength(strength);
                 if(enableDebug)
                 {
-                    //g_deltamushCache->debugCCD(counter, points);
+                    g_deltamushCache->debugCCD(counter, points);
                 }
                 else
                 {
                     g_deltamushCache->improvedDM(points);
                 }
-               
             }
             else
             {
                 g_deltamushCache->test(points);
             }
-
         }
         else
         {

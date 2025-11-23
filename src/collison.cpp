@@ -28,7 +28,6 @@ void Collison::init(std::vector<MPoint> v)
 
 bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth, CollisonData& data)
 {
-
     smallestTio = 1;
     tois.clear();
     Eigen::Vector3f v_t0, v_t1;
@@ -41,7 +40,6 @@ bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth, CollisonDat
     std::set<int> veIDX;
     std::unordered_map<int, std::pair<int, int>> edIDX;
     std::unordered_map<int, MIntArray> faIDX;
-
 
     int vindex = -1;
     int findex = -1;
@@ -84,7 +82,6 @@ bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth, CollisonDat
 
             f2_t1 = toEigenVec(mesh.getPoint(facevercesIdx2));
             f2_t0 = toEigenVec(smooth.getPoint(facevercesIdx2));
-
 
             bool iscollied = ticcd::vertexFaceCCD(
                 v_t0, f0_t0, f1_t0, f2_t0,
@@ -161,9 +158,6 @@ bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth, CollisonDat
             );
 
             if (is_colliding) {
-
-
-
                 vertexes.insert(edgesidx2.first);
                 vertexes.insert(edgesidx2.second);
 
@@ -183,7 +177,6 @@ bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth, CollisonDat
             }
         }
     }
-    
     
     alfa = smallestTio;
     prevTio = smallestTio;
@@ -211,11 +204,8 @@ bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth, CollisonDat
     MGlobal::displayInfo(alfastr.c_str());
     MGlobal::displayInfo(std::to_string(pointsCount).c_str());
 
-
     return isanycollied;
 }
-
-
 
 void Collison::setRestToi(float newtoi)
 {
@@ -232,7 +222,6 @@ void Collison::setMeshTio(int vertexIdx, MeshHandler& mesh)
 {
     MPoint newPoint = deltas[vertexIdx].getDeltaPoint(std::move(mesh.getMatrixC(vertexIdx)));
     mesh.setPoint(vertexIdx, newPoint);
-
 }
 
 void Collison::setSmalest(int vertexIdx, int f, int edegs, int edegs2,MeshHandler& mesh, CollisonData& data)

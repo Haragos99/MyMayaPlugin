@@ -149,69 +149,32 @@ std::set<int> IntersectionFilter::clalculateIntersections(const MPointArray& ori
 	return collisionPoints;
 }
 
-
-
-// TODO: DELETE THIS FUNCTION LATER
-std::set<int> IntersectionFilter::clalculateIntersections(MeshHandler& original, MeshHandler& smooth)
+void IntersectionFilter::separateFilteredData(Collison& data)
 {
-	original.updateMesh();
-	original.recalculateNormals();
-	auto normlas = original.getNormals();
-	auto& points = original.getVertices();
-	//allIntersections flags
-	MMeshIsectAccelParams accelParams;
-	accelParams = original.getIntersectParameters();
-	smooth.updateMesh();
-	bool sortHits = false;
-	float tolerance = 0.0001f;
-	MFloatPointArray hitPoints;
-	MFloatArray hitRayParams;
-	MIntArray hitFaces;
-	MIntArray hitTriangles;
-	MFloatArray hitBary1;
-	MFloatArray hitBary2;
-	auto& fnMesh1 = smooth.getMeshFunction();
-
-	MPoint closePoint;
-	MVector closeNormal;
-	std::set<int> collisionPoints;
-	for (int idx = 0; idx < points.length(); ++idx) {
-		// e.g. get position
-		MPoint pos = points[idx];
-		// do your work
-
-		MFloatVector normal = -normlas[idx];
-		auto raySource = MFloatPoint(pos[0], pos[1], pos[2], 1.0);
-
-		auto rayDir = MFloatVector(normal[0], normal[1], normal[2]);
-		bool hit = fnMesh1.allIntersections(raySource, rayDir, NULL, NULL, false, MSpace::kObject, 99999, false, &accelParams, false,
-			hitPoints, &hitRayParams, &hitFaces, &hitTriangles, &hitBary1, &hitBary2, 0.000001f);
-
-		if (hit)
-		{
-			fnMesh1.getClosestPointAndNormal(pos, closePoint, closeNormal, MSpace::kWorld, NULL, NULL);
-			auto delta = pos - closePoint;
-			//collision check with dot product
-			auto angle = delta * closeNormal;
-			if (angle < 0)
-			{
-				MGlobal::displayInfo("ACollision");
-				collisionPoints.insert(idx);
-			}
-		}
-	}
-	MGlobal::displayInfo("Collision");
-	return collisionPoints;
+	data.vertexesIDX = vertexesIDX;
+	data.facesIDX = facesIDX;
+	data.edgesIDX = edIDX;
 }
 
 
+void IntersectionFilter::initFilteredData(MeshHandler& mesh)
+{
+	auto& faceData = mesh.getFacesData();
+	auto& faces = mesh.getFacesIndices();
+	auto& edgesIDX = mesh.getEdgesIndices();
 
+	for (int face : fIndices)
+	{
+		auto faceVerts = faces.at(face);
+		facesIDX[face] = faceVerts;
+		auto& edges = faceData[face].edgesIndices;
+		auto& verteses = faceData[face].vertexIndices;
 
+		vertexesIDX.insert(verteses.begin(), verteses.end());
 
-
-
-
-
-
-
-
+		for (int edgeIdx : edges)
+		{
+			edIDX[edgeIdx] = edgesIDX.at(edgeIdx);
+		}
+	}
+}

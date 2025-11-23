@@ -30,7 +30,6 @@ void MyLocatorDrawOverride::addUIDrawables(
 
     }
     
-    
    if(deltamushCache)
    { 
         MGlobal::displayInfo("SSSSSIt worked");
@@ -42,7 +41,6 @@ void MyLocatorDrawOverride::addUIDrawables(
         auto& points = mesh.getVertices();
 	    auto& faceesIDX = mesh.getFacesIndices();
 	    auto& edgesIDX = mesh.getEdgesIndices();
-
 
 
 		auto& smoothpoints = smoothmesh.getVertices();
