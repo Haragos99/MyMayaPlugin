@@ -11,7 +11,7 @@ DeltaMush::DeltaMush(MDagPath& dagPath) : m_mesh(dagPath)
 	m_mesh.collectVerticesNearPoint(MPoint(0, 0, 0),1.8);
 }
 
-MeshHandler DeltaMush::smoothMesh(MeshHandler mesh,int iterations, bool saveSmooth)
+MeshHandler DeltaMush::smoothMesh(MeshHandler mesh,int iterations)
 {
 	MStatus status;
 	double smoothingFactor = 0.5;
@@ -44,10 +44,6 @@ MeshHandler DeltaMush::smoothMesh(MeshHandler mesh,int iterations, bool saveSmoo
 	}
 	mesh.setVertices(currentPoints);
 	MGlobal::displayInfo("sss");
-	if (saveSmooth)
-	{
-		m_smooth = mesh;
-	}
 
 	return mesh;
 }
@@ -55,14 +51,14 @@ MeshHandler DeltaMush::smoothMesh(MeshHandler mesh,int iterations, bool saveSmoo
 void DeltaMush::CalculateDelta()
 {
 	deltas.clear();
-	auto smooth = smoothMesh(m_mesh, smoothIterion);
-	smooth.recalculateNormals();
-	smooth.info();
+	m_smooth = smoothMesh(m_mesh, smoothIterion);
+	m_smooth.recalculateNormals();
+	m_smooth.info();
 
 	MStatus status;
 	auto& originalPoints = m_mesh.getVertices();
-	auto& smoothpoints = smooth.getVertices();
-	auto& normals = smooth.getNormals();
+	auto& smoothpoints = m_smooth.getVertices();
+	auto& normals = m_smooth.getNormals();
 	for (int vertIndex = 0; vertIndex < smoothpoints.length(); ++vertIndex)
 	{
 		MPoint point = smoothpoints[vertIndex];
@@ -72,7 +68,7 @@ void DeltaMush::CalculateDelta()
 
 		normal.normalize();
 
-		int neighborIdx = *smooth.getConnectedVertices(vertIndex).begin();
+		int neighborIdx = *m_smooth.getConnectedVertices(vertIndex).begin();
 
 		MPoint neighbor = smoothpoints[neighborIdx];
 
@@ -98,7 +94,7 @@ void DeltaMush::CalculateDelta()
 	MGlobal::displayInfo("Delta successfully.");
 	MGlobal::displayInfo(std::to_string(deltas.size()).c_str());
 
-	IntersectionFilter filter(smooth);
+	IntersectionFilter filter(m_smooth);
 	m_filteredIndices = filter.filterFirstIntersections(m_mesh.getVertices(), m_mesh);
 	MGlobal::displayInfo("Defult filter successfully.");
 }
@@ -135,7 +131,7 @@ void DeltaMush::debugCCD(int itertion, MPointArray points)
 	MGlobal::displayInfo("Start Debugg");
 	CalculateDeformation();
 	Collison collison = Collison(deltas);
-	auto smooth = smoothMesh(m_mesh, smoothIterion, false);
+	auto smooth = smoothMesh(m_mesh, smoothIterion);
 	IntersectionFilter filter(smooth);
 	filter.filterDefromIntersections(m_mesh.getVertices(), m_mesh, m_filteredIndices);
 	filter.initFilteredData(m_mesh);
@@ -158,14 +154,14 @@ void DeltaMush::debugCCD(int itertion, MPointArray points)
 
 void DeltaMush::CalculateDeformation()
 {
-	auto smooth = smoothMesh(m_mesh, smoothIterion);
-	smooth.recalculateNormals();
+	m_smooth = smoothMesh(m_mesh, smoothIterion);
+	m_smooth.recalculateNormals();
 
 	auto newDeltas = scaleDeltas(deltas, deltaMushFactor);
 
 	MStatus status;	
-	auto& smoothPoints = smooth.getVertices();
-	auto& smoothNormals = smooth.getNormals();
+	auto& smoothPoints = m_smooth.getVertices();
+	auto& smoothNormals = m_smooth.getNormals();
 	MPointArray deformedPoints;
 	for (int vertIndex = 0; vertIndex < smoothPoints.length(); ++vertIndex)
 	{
@@ -174,7 +170,7 @@ void DeltaMush::CalculateDeformation()
 		MVector normal = smoothNormals[vertIndex];
 		normal.normalize();
 
-		int neighborIdx = *smooth.getConnectedVertices(vertIndex).begin();
+		int neighborIdx = *m_smooth.getConnectedVertices(vertIndex).begin();
 
 		MPoint neighbor = smoothPoints[neighborIdx];
 
@@ -216,7 +212,7 @@ void DeltaMush::improvedDM(MPointArray points)
 	m_collisonData.clear();
 
 	auto start = std::chrono::high_resolution_clock::now();
-	MeshHandler smooth = smoothMesh(m_mesh, smoothIterion, false);
+	MeshHandler smooth = smoothMesh(m_mesh, smoothIterion);
 	IntersectionFilter filter(smooth);
 	filter.filterDefromIntersections(m_mesh.getVertices(), m_mesh, m_filteredIndices);
 	//m_collisonData.collidedVertecesIdx = filter.vertexIndices;
@@ -236,7 +232,7 @@ void DeltaMush::improvedDM(MPointArray points)
 		collison.setAlfa(0);
 	}
 	
-	m_collisonData.collidedVertecesIdx = collison.vertexes;
+	m_collisonData.collidedAllVertecesIdx = collison.vertexes;
 	smoothCollidedVertices(collison.vertexes);
 	auto end = std::chrono::high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();

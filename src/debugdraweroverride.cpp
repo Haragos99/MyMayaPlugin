@@ -56,6 +56,9 @@ void MyLocatorDrawOverride::addUIDrawables(
         }
 
 
+        /*
+		* Smooth mesh draw
+        * 
         for (auto f : smoothfaceesIDX)
         {
             drawManager.setColor(MColor(1.0f, 1.0f, 0.0f));
@@ -69,7 +72,7 @@ void MyLocatorDrawOverride::addUIDrawables(
             drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, face);
 
         }
-
+        */
 
 
         // Draw red point
@@ -116,9 +119,19 @@ void MyLocatorDrawOverride::addUIDrawables(
 		    drawManager.point(p);
         }
 
-        for (auto f : collisonData.collidedFacesIdx)
+
+
+        for (auto v : collisonData.collidedAllVertecesIdx)
         {
-            drawManager.setColor(MColor(1.0f, 0.0f, 0.0f));
+            drawManager.setPointSize(8.0f);
+            drawManager.setColor(MColor(1.0f, 0.0f, 1.0f));
+            MPoint p = points[v];
+            drawManager.point(p);
+        }
+
+        for (auto f : collisonData.filteredFacesIdx)
+        {
+            drawManager.setColor(MColor(1.0f, 0.75f, 0.0f));
 		    auto faceVerts = faceesIDX.at(f);
 		    MPointArray face;
             for (int i : faceVerts)
@@ -129,6 +142,24 @@ void MyLocatorDrawOverride::addUIDrawables(
 		    drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, face);
 
         }
+
+
+
+        for (auto f : collisonData.collidedFacesIdx)
+        {
+            drawManager.setColor(MColor(1.0f, 0.0f, 0.0f));
+            auto faceVerts = faceesIDX.at(f);
+            MPointArray face;
+            for (int i : faceVerts)
+            {
+                face.append(points[i]);
+            }
+
+            drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, face);
+
+        }
+
+
 
         for (auto e : collisonData.collidedEdgesIdx)
         {

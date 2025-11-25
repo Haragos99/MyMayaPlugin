@@ -6,7 +6,9 @@ struct CollisonData {
 	std::vector<MBoundingBox> intersected;
 	std::vector<MBoundingBox> smoothmesh;
 	std::vector<MBoundingBox> mesh;
+	std::set<int> filteredFacesIdx;
 	std::set<int> collidedVertecesIdx;
+	std::set<int> collidedAllVertecesIdx;
 	std::set<int> collidedFacesIdx;
 	std::set<int> collidedEdgesIdx;
 	std::vector<MPoint> collidedPoints;
@@ -18,6 +20,8 @@ struct CollisonData {
 		collidedFacesIdx.clear();
 		collidedEdgesIdx.clear();
 		collidedPoints.clear();
+		filteredFacesIdx.clear();
+		collidedAllVertecesIdx.clear();
 	}	
 };
 

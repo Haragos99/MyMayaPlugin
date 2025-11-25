@@ -265,8 +265,8 @@ void Collison::setSmalest(int vertexIdx, int f, int edegs, int edegs2,MeshHandle
             deltas[pointIdx].isCollied = true;
             setMeshTio(pointIdx, mesh);
         }
-		//data.collidedVertecesIdx.insert(vertexIdx);
-		//data.collidedFacesIdx.insert(f);
+		data.collidedVertecesIdx.insert(vertexIdx);
+		data.collidedFacesIdx.insert(f);
 	}
 
 

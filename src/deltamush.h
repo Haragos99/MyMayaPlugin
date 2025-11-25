@@ -6,7 +6,7 @@
 class DeltaMush {
 public:
 	DeltaMush(MDagPath& dagPath);
-	MeshHandler smoothMesh(MeshHandler mesh,int iterations, bool saveSmooth = true); 
+	MeshHandler smoothMesh(MeshHandler mesh,int iterations); 
 	void CalculateDelta();
 	void CalculateDeformation();
 	void CCDDeformation();
