@@ -7,6 +7,7 @@ class DeltaMushNode : public MPxDeformerNode
 public:
     static void* creator() { return new DeltaMushNode; }
     static MStatus initialize();
+    void postConstructor();
     MStatus deform(MDataBlock& data,
         MItGeometry& itGeo,
         const MMatrix& localToWorldMatrix,
@@ -18,12 +19,8 @@ public:
     static MObject aStrength; 	 //  float slider
     static MObject aEnableDebug;
     static MTypeId id;
+
     // --- Overridden methods ---
     MStatus setDependentsDirty(const MPlug& plugBeingDirtied, MPlugArray& affectedPlugs) override;
-    static  std::shared_ptr<DeltaMush> g_deltamushCache;
-    void postConstructor()
-    {
-        MPxDeformerNode::setDeformationDetails(MPxDeformerNode::kDeformsColors);
-    }
-
+    std::shared_ptr<DeltaMush> m_deltamush;
 };

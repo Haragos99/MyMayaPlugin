@@ -7,7 +7,6 @@ class MyPluginCmd : public MPxCommand {
 
 private:
 
-    static std::shared_ptr<DeltaMush> deltamush;
     MStatus createCube();
     MFnMesh& smoothMesh(MObject& meshObj, int iterations);
     MStatus collisonTest(MDagPath& dagPath0, MDagPath& dagPath1);

@@ -2,7 +2,6 @@
 
 MTypeId DeltaMushNode::id(0x00123456);
 
-std::shared_ptr<DeltaMush> DeltaMushNode::g_deltamushCache = nullptr;
 MObject DeltaMushNode::aEnableFeature;
 MObject DeltaMushNode::aEnableDeltamush;
 MObject DeltaMushNode::aSmoothing;
@@ -27,7 +26,6 @@ MStatus DeltaMushNode::initialize()
 
     // Ensure Maya knows the attribute affects the output geometry
     attributeAffects(aEnableFeature, outputGeom);
-
 
 
 
@@ -57,7 +55,6 @@ MStatus DeltaMushNode::initialize()
 
     // Ensure Maya knows the attribute affects the output geometry
     attributeAffects(aEnableDebug, outputGeom);
-
 
 
     // Smoothing (float slider)
@@ -100,6 +97,24 @@ MStatus DeltaMushNode::initialize()
     return MS::kSuccess;
 }
 
+void DeltaMushNode::postConstructor()
+{
+    MPxDeformerNode::setDeformationDetails(MPxDeformerNode::kDeformsColors);
+    MSelectionList selection;
+    MGlobal::getActiveSelectionList(selection);
+
+    if (selection.length() == 0)
+    {
+        MGlobal::displayError("No object selected.");
+    }
+
+    MDagPath dagPath;
+    selection.getDagPath(0, dagPath);  // Get first selected item
+    MGlobal::displayInfo("Mesh Path for DelatMush: " + dagPath.fullPathName());
+	// initialize DeltaMush 
+    m_deltamush = std::make_shared<DeltaMush>(dagPath);
+	m_deltamush->CalculateDelta();
+}
 
 
 MStatus DeltaMushNode::setDependentsDirty(const MPlug& plugBeingDirtied, MPlugArray& affectedPlugs)
@@ -111,8 +126,8 @@ MStatus DeltaMushNode::setDependentsDirty(const MPlug& plugBeingDirtied, MPlugAr
         plugBeingDirtied.getValue(smoothVal); // works because it's a numeric attribute
 
         // Call your custom method
-        g_deltamushCache->setDeltaMushFactor(smoothVal);
-		g_deltamushCache->CalculateDeformation();
+        m_deltamush->setDeltaMushFactor(smoothVal);
+		m_deltamush->CalculateDeformation();
 		MGlobal::displayInfo(MString("Smoothing changed to: ") + smoothVal);
         MDagPath dagPath;
         MDagPath::getAPathTo(thisMObject(), dagPath);
@@ -151,25 +166,25 @@ MStatus DeltaMushNode::deform(MDataBlock& data,
     MPointArray points;
     if(enableDeltamush)
     {
-        if (g_deltamushCache != nullptr)
+        if (m_deltamush != nullptr)
         {
-            g_deltamushCache->setDeltaMushFactor(smoothing);
+            m_deltamush->setDeltaMushFactor(smoothing);
             itGeo.allPositions(points);
             if (enableFeature)
             {
-				g_deltamushCache->setStrength(strength);
+				m_deltamush->setStrength(strength);
                 if(enableDebug)
                 {
-                    g_deltamushCache->debugCCD(counter, points);
+                    m_deltamush->debugCCD(counter, points);
                 }
                 else
                 {
-                    g_deltamushCache->improvedDM(points);
+                    m_deltamush->improvedDM(points);
                 }
             }
             else
             {
-                g_deltamushCache->test(points);
+                m_deltamush->test(points);
             }
         }
         else

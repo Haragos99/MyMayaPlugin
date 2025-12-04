@@ -278,7 +278,7 @@ void DeltaMush::CCDDeformation()
 	m_mesh.setVertices(deformedPoints);
 }
 
-// TODO: reftor this function nopt Delta msuh resposible for projection
+// TODO: reftor this function not Delta mush resposible for projection
 void DeltaMush::projectPointToPlane(const MPoint& P, const MVector& N, MPoint& Q)
 {
 	MVector norm = N;

@@ -5,7 +5,6 @@
 #include "debugdraweroverride.h"
 #include "intersectionfilter.h"
 MCallbackIdArray MyPluginCmd::g_callbackIds;
-std::shared_ptr<DeltaMush> MyPluginCmd::deltamush;
 
 
 MFnMesh& MyPluginCmd::smoothMesh(MObject& meshObj, int iterations)
@@ -221,17 +220,7 @@ MStatus MyPluginCmd::runDeltaMush()
         MGlobal::displayError("No mesh found in selection.");
         return MS::kFailure;
     }
-    MString cmd1 = "polyTriangulate " + dagPath.fullPathName();
-    //MGlobal::executeCommand(cmd1);
-    deltamush = std::make_shared<DeltaMush>(dagPath);
-    deltamush->CalculateDelta();
-    deltamush->CalculateDeformation();
-
-
-
-    // TODO: Refactor this for non static solution  
-    DeltaMushNode::g_deltamushCache = deltamush;
-    MyLocatorDrawOverride::deltamushCache = deltamush;
+;
     MString cmd;
     cmd.format("deformer -type \"^1s\" ^2s;", nodeType, dagPath.fullPathName());
     MGlobal::executeCommand(cmd);
