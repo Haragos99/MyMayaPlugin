@@ -196,7 +196,6 @@ void DeltaMush::test(MPointArray points)
 {
 	MColorArray colors;
 	colors.setLength(points.length());;
-	m_mesh.addcolor(colors);
 	m_mesh.setVertices(points);
 	CalculateDeformation();
 	m_mesh.updateMesh();
