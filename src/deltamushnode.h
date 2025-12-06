@@ -18,6 +18,7 @@ public:
 	static MObject aCounter; 	 //  int 
     static MObject aStrength; 	 //  float slider
     static MObject aEnableDebug;
+    static MObject deformerMsgAttr;
     static MTypeId id;
 
     // --- Overridden methods ---

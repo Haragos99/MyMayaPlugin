@@ -1,6 +1,7 @@
 #pragma once
 #include "framework.h"
 #include "mesh.h"
+#include "meshdata.h"
 #include "collison.h"
 
 class DeltaMush {
@@ -22,6 +23,9 @@ public:
 	MeshHandler& getMeshHandler() { return m_mesh; }
 	MeshHandler& getSmoothMeshHandler() { return m_smooth; }
 	std::vector<MPoint> getDeltas() { return deltas; }
+	MeshData* createMeshData();
+
+
 private:
 	CollisonData m_collisonData;
 	float deltaMushFactor;

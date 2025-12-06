@@ -8,6 +8,7 @@ MObject DeltaMushNode::aSmoothing;
 MObject DeltaMushNode::aCounter;
 MObject DeltaMushNode::aEnableDebug;
 MObject DeltaMushNode::aStrength;
+MObject DeltaMushNode::deformerMsgAttr;
 
 // --- Attribute initialization ---
 MStatus DeltaMushNode::initialize()
@@ -93,6 +94,21 @@ MStatus DeltaMushNode::initialize()
     addAttribute(aStrength);
 
     attributeAffects(aStrength, outputGeom);
+
+
+
+
+
+
+
+    MFnTypedAttribute tAttr;
+    deformerMsgAttr = tAttr.create("message", "msg", MFnData::kString);
+    tAttr.setStorable(false);
+    tAttr.setWritable(false);
+    tAttr.setReadable(true);
+
+    addAttribute(deformerMsgAttr);
+
 
     return MS::kSuccess;
 }

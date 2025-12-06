@@ -61,7 +61,7 @@ add_library(MyMayaPlugin SHARED
     src/tight_inclusion/interval_root_finder.cpp
     src/tight_inclusion/logger.cpp
     src/intersectionfilter.cpp
-    src/collison.cpp  "src/debugdraweroverride.cpp" "src/aabb.h"    )
+    src/collison.cpp  "src/debugdraweroverride.cpp" "src/aabb.h"     "src/meshdata.h")
 
 # If you want to include headers in IDE:
 target_sources(MyMayaPlugin PRIVATE

@@ -5,7 +5,13 @@
 #include "debugdraweroverride.h"
 #include "intersectionfilter.h"
 MCallbackIdArray MyPluginCmd::g_callbackIds;
+unsigned int MyPluginCmd::nextId = 0;
 
+MyPluginCmd ::MyPluginCmd()
+{
+    deformerNodeType = "deltaMushNode";
+    locatorNodeType = "myLocator";
+}
 
 MFnMesh& MyPluginCmd::smoothMesh(MObject& meshObj, int iterations)
 {
@@ -60,36 +66,14 @@ MFnMesh& MyPluginCmd::smoothMesh(MObject& meshObj, int iterations)
 
 
 
-
-
 MStatus MyPluginCmd::doIt(const MArgList&)
 {
-    /*
-    MSelectionList selection;
-    MGlobal::getActiveSelectionList(selection);
-    
-    // Check for exactly two items
-    if (selection.length() == 0) {
-        MGlobal::displayError("Please select mesh object");
-        return MS::kFailure;
-    }
-    // Get DagPaths for each selected item
-    MDagPath dagPath0;
-    MDagPath dagPath1;
-	
-    selection.getDagPath(0, dagPath0);
-    selection.getDagPath(1, dagPath1);
-    */
-    //selection.getDagPath(1, dagPath1);
-    //collisonTest(dagPath0, dagPath1);
-	//THecollisonTest3(dagPath0);
-    //collisonTest2(dagPath0, dagPath1);
-	runDeltaMush();
-	//collison(dagPath0, dagPath1);
-    return MStatus::kSuccess;
+	nodeId = nextId++; // assign and increment unique node ID
+	MStatus status;
+    status = createDeltaMush();
+    status = createDrawLocator();
+    return status;
 }
-
-
 
 MStatus MyPluginCmd::collison(MDagPath& dagPath0, MDagPath& dagPath1)
 {
@@ -149,7 +133,6 @@ MStatus MyPluginCmd::collison(MDagPath& dagPath0, MDagPath& dagPath1)
     }
 
     MGlobal::executeCommand("createNode myLocator");
-    MyLocatorDrawOverride::CDpoints = collisonPointsVec;
     MGlobal::displayInfo("Mesh modified successfully.");
 
 	return MStatus::kSuccess;
@@ -192,9 +175,10 @@ MeshHandler MyPluginCmd::smoothMesh(MeshHandler mesh, int iterations)
 }
 
 
-
-MStatus MyPluginCmd::runDeltaMush()
+// Create Delta Mush Deformer 
+MStatus MyPluginCmd::createDeltaMush()
 {
+    MStatus status;
     MSelectionList selection;
     MGlobal::getActiveSelectionList(selection);
 
@@ -204,10 +188,7 @@ MStatus MyPluginCmd::runDeltaMush()
         return MS::kFailure;
     }
 
-    MStatus status;
-    MString nodeType("deltaMushNode");
     MFnDependencyNode fnDep;
-    //MObject node = fnDep.create(nodeType, &status);
     MDagPath dagPath;
     selection.getDagPath(0, dagPath);  // Get first selected item
     MGlobal::displayInfo("Add mesh for: " + dagPath.fullPathName());
@@ -220,44 +201,38 @@ MStatus MyPluginCmd::runDeltaMush()
         MGlobal::displayError("No mesh found in selection.");
         return MS::kFailure;
     }
-;
+    MString deltaMushNodeName = deformerNodeType + MString("_") + MString(std::to_string(nodeId).c_str());
     MString cmd;
-    cmd.format("deformer -type \"^1s\" ^2s;", nodeType, dagPath.fullPathName());
+    cmd.format("deformer -type \"^1s\" -name \"^2s\" ^3s;", deformerNodeType, deltaMushNodeName, dagPath.fullPathName());
     MGlobal::executeCommand(cmd);
 
-
-    MGlobal::executeCommand("createNode myLocator");
-
-
-    MGlobal::displayInfo("Mesh modified successfully.");
+    MGlobal::displayInfo("Delta Mush created");
 	return MS::kSuccess;
 }
 
-
-
-
-
-
-
-
-
-
-MStatus MyPluginCmd::THecollisonTest3(MDagPath& dagPath0)
+// Create Locator for visualizing Deformer
+MStatus MyPluginCmd::createDrawLocator()
 {
-	MeshHandler mesh = MeshHandler(dagPath0);
-	MeshHandler smoothmesh = smoothMesh(mesh, 20);
+    MString deltaMushNodeName = deformerNodeType + MString("_") + MString(std::to_string(nodeId).c_str());
+    MString locatorName = "myLocator_" + MString(std::to_string(nodeId).c_str());
 
+    MString cmd;
+    cmd.format("createNode myLocator -name \"^1s\";", locatorName);
+    MGlobal::executeCommand(cmd);
 
-	IntersectionFilter intersector = IntersectionFilter(smoothmesh);
-    auto  collisionPoints = intersector.filterFirstIntersections(mesh.getVertices(), mesh);
-    MGlobal::executeCommand("createNode myLocator");
-    //MyLocatorDrawOverride::CDpoints = collisionPoints;
-    MGlobal::displayInfo("Mesh modified successfully.");
+	// create connection between deltaMushNode and locator
+    MStatus status = MGlobal::executeCommand(MString("connectAttr ")
+        + deltaMushNodeName + ".message "
+        + locatorName + ".deformerMessage");
 
-    return MStatus::kSuccess;
+    if (!status) 
+    {
+        MGlobal::displayError("Failed to connect deformer to locator!");
+		return MS::kFailure;
+    }
+    MGlobal::displayInfo("Locator node created");
+	return MStatus::kSuccess;
 }
-
-
 
 
 std::vector<MBoundingBox> buildFaceAABBs(MDagPath& meshObj)
@@ -291,7 +266,6 @@ std::vector<MBoundingBox> buildFaceAABBs(MDagPath& meshObj)
 
 MStatus MyPluginCmd::collisonTest(MDagPath& dagPath0, MDagPath& dagPath1)
 {
-    
     MStatus status;
 
     // Optionally verify they are mesh shapes
@@ -300,9 +274,6 @@ MStatus MyPluginCmd::collisonTest(MDagPath& dagPath0, MDagPath& dagPath1)
         MGlobal::displayError("First selected object is not a mesh.");
         return MS::kFailure;
     }
-
-
-
     
     // create an empty mesh data container
     MFnMeshData meshDataFn;
@@ -441,12 +412,9 @@ MStatus MyPluginCmd::collisonTest(MDagPath& dagPath0, MDagPath& dagPath1)
         
     }
     MGlobal::executeCommand("createNode myLocator");
-	MyLocatorDrawOverride::CDpoints = collisionPoints;
-	MyLocatorDrawOverride::CDfaces = collisionFaces;
     MGlobal::displayInfo("Collision test executed.");
     MGlobal::displayInfo(std::to_string(collisionPoints.size()).c_str());
 }
-
 
 
 MStatus  MyPluginCmd::collisonTest2(MDagPath& dagPath0, MDagPath& dagPath1)
@@ -525,66 +493,10 @@ MStatus  MyPluginCmd::collisonTest2(MDagPath& dagPath0, MDagPath& dagPath1)
         }
     }
 
-    MyLocatorDrawOverride::CDpoints = collisionPoints;
-    MyLocatorDrawOverride::CDfaces = collisionFaces;
     MGlobal::displayInfo("Collision test executed.");
     MGlobal::displayInfo(std::to_string(collisionPoints.size()).c_str());
 
 }
-
-bool MyPluginCmd::isPointInPlane(const MPoint& p, const MPoint& a, const MPoint& b, const MPoint& c)
-{
-    // Define a small tolerance value (epsilon)
-    const double epsilon = 1e-9;
-    MVector pa = p - a;
-    MVector pb = p - b;
-    MVector pc = p - c;
-    return std::abs(mixed(pa, pb, pc)) <= epsilon;
-}
-
-
-double MyPluginCmd::mixed(MVector& a, MVector& b, MVector& c)
-{
-    auto cross = b ^ c;
-    return a * cross;
-}
-
-
-
-bool MyPluginCmd::isPointInTriangle(const MPoint& p, const MPoint& a, const MPoint& b, const MPoint& c)
-{
-    if (!isPointInPlane(p, a, b, c))
-    {
-        return false;
-    }
-
-    MVector ba = b - a;
-    MVector ca = c - a;
-    MVector pa = p - a;
-
-    const auto normDir = ba ^ ca;
-    if ((normDir * (ba ^ pa)) < 0)
-    {
-        return false;
-    }
-
-    MVector cb = c - b;
-    MVector pb = p - b;
-    if ((normDir * (cb ^ pb)) < 0)
-    {
-        return false;
-    }
-
-    MVector pc = p - c;
-    MVector ac = a - c;
-    if ((normDir * (ac ^ pc)) < 0)
-    {
-        return false;
-    }
-    return true;
-}
-
-
 
 MStatus MyPluginCmd::createCube()
 {

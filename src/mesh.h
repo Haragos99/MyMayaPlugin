@@ -4,9 +4,6 @@
 
 
 using PolyData = std::pair<std::vector<int>, std::vector<MPoint>>;
-struct MeshData {
-
-};
 
 
 struct FaceData
@@ -83,6 +80,8 @@ public:
 
     void setMatrix(int idx, const MMatrix& C);
     
+	std::vector<MMatrix>& getMatricesC() { return m_matrcesC; }
+
     MFloatVectorArray computePerVertexNormals();
 
     MObject getMeshObject();

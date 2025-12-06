@@ -1,11 +1,59 @@
 #include "debugdraweroverride.h"
+#include "deltamushnode.h"
 
 MTypeId MyLocator::id(0x001226C1);
 
-std::shared_ptr<DeltaMush> MyLocatorDrawOverride::deltamushCache = nullptr;
+MObject MyLocator::locatorMsgAttr;
 
-std::vector<MPoint> MyLocatorDrawOverride::CDpoints;
-std::vector<MPointArray> MyLocatorDrawOverride::CDfaces;
+
+MStatus MyLocator::initialize()
+{
+    MFnTypedAttribute tAttr2;
+    locatorMsgAttr = tAttr2.create("deformerMessage", "dmsg", MFnData::kString);
+    tAttr2.setStorable(false);
+    tAttr2.setWritable(true);
+    tAttr2.setReadable(true);
+
+    addAttribute(locatorMsgAttr);
+
+    return MS::kSuccess;
+}
+
+MStatus MyLocator::connectionMade(const MPlug& plug, const MPlug& otherPlug, bool asSrc)
+{
+    auto node = otherPlug.node();
+    MFnDependencyNode fn(node);
+
+    const DeltaMushNode* deltamushNode = dynamic_cast<DeltaMushNode*>(fn.userNode());
+    if (!deltamushNode) {
+        MGlobal::displayInfo("Error: Cannot cast node to DeltaMushNode" );
+        return MS::kFailure;
+    }
+	deltamush = deltamushNode->m_deltamush;
+    MGlobal::displayInfo("Connection Was successful: " + fn.name());
+    return MS::kSuccess;
+}
+
+MUserData* MyLocatorDrawOverride::prepareForDraw(
+    const MDagPath& objPath,
+    const MDagPath& cameraPath,
+    const MHWRender::MFrameContext& frameContext,
+    MUserData* oldData)
+{
+    MObject drawNode = objPath.node();
+    MFnDependencyNode depNodeFn(drawNode);
+    MGlobal::displayInfo("Preparing for draw: " + depNodeFn.name());
+    auto userDataObj = depNodeFn.userNode();
+    MyLocator* locatorNode = dynamic_cast<MyLocator*>(userDataObj);
+    MeshData* data = dynamic_cast<MeshData*>(oldData);
+    if (locatorNode && locatorNode->deltamush)
+    {
+        // Allocate only if needed. Maya will delete it automatically.
+        data = locatorNode->deltamush->createMeshData();
+    }
+
+    return data;
+}
 
 // TODO: Refactor for other solution to use MUserData
 void MyLocatorDrawOverride::addUIDrawables(
@@ -14,59 +62,30 @@ void MyLocatorDrawOverride::addUIDrawables(
     const MHWRender::MFrameContext& frameContext,
     const MUserData* data) 
 {
-    drawManager.beginDrawable();
-    
-    for (auto& p : CDpoints)
-    {
-        drawManager.setPointSize(10.0f);
-        drawManager.setColor(MColor(0.0f, 0.0f, 1.0f));
-        drawManager.point(p);
-    }
-    for (auto& f : CDfaces)
-    {
-        drawManager.setColor(MColor(1.0f, 0.0f, 0.0f));
-
-        drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, f);
-
-    }
-    
-   if(deltamushCache)
-   { 
+   const MeshData* meshdata = dynamic_cast<const MeshData*>(data);
+    if(meshdata)
+    { 
+        drawManager.beginDrawable();
         MGlobal::displayInfo("SSSSSIt worked");
 
-        auto& mesh = deltamushCache->getMeshHandler();
-        auto& smoothmesh = deltamushCache->getSmoothMeshHandler();
-        auto deltas = deltamushCache->getDeltas();
-	    auto& collisonData = deltamushCache->getCollisonData();
-        auto& points = mesh.getVertices();
-	    auto& faceesIDX = mesh.getFacesIndices();
-	    auto& edgesIDX = mesh.getEdgesIndices();
-
-
-		auto& smoothpoints = smoothmesh.getVertices();
-		auto& smoothfaceesIDX = smoothmesh.getFacesIndices();
-
-
-
-        for (auto v : smoothpoints)
+        for (auto v : meshdata->m_smooth)
         {
             //drawManager.setPointSize(8.0f);
             //drawManager.setColor(MColor(0.0f, 1.0f, 1.0f));
             //drawManager.point(v);
         }
-
-
+        
         /*
 		* Smooth mesh draw
         * 
-        for (auto f : smoothfaceesIDX)
+        for (auto f : meshdata->faceesIDX)
         {
             drawManager.setColor(MColor(1.0f, 1.0f, 0.0f));
             auto faceVerts = f.second;
             MPointArray face;
             for (int i : faceVerts)
             {
-                face.append(smoothpoints[i]);
+                face.append(meshdata->m_smooth[i]);
             }
 
             drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, face);
@@ -74,111 +93,102 @@ void MyLocatorDrawOverride::addUIDrawables(
         }
         */
 
-
         // Draw red point
         drawManager.setColor(MColor(1.0f, 0.0f, 0.0f));
         drawManager.point(MPoint(0.0, 0.0, 0.0));
-        float factor = deltamushCache->getDeltaMushFactor();
 
-        if (factor < 1)
+        if (meshdata->factor < 1)
         {
-            for (int i = 0; i < points.length(); ++i)
+            for (int i = 0; i < meshdata->m_vertices.length(); ++i)
             {
                 drawManager.setColor(MColor(1.0f, 0.0f, 0.0f));
-                MPoint delta = deltas[i];
-                MPoint start = mesh.getMatrixC(i) * delta;
-                delta[0] *= factor;
-                delta[1] *= factor;
-                delta[2] *= factor;
-                MPoint end = mesh.getMatrixC(i) * delta;
+                MPoint delta = meshdata->deltas[i];
+                MPoint start = meshdata->m_matrcesC[i] * delta;
+                delta[0] *= meshdata->factor;
+                delta[1] *= meshdata->factor;
+                delta[2] *= meshdata->factor;
+                MPoint end = meshdata->m_matrcesC[i] * delta;
                 drawManager.line(start, end);
             }
         }
-	    int d = collisonData.intersected.size();
-        for (auto& b : collisonData.intersected)
+	    int d = meshdata->collisonData.intersected.size();
+        for (auto& b : meshdata->collisonData.intersected)
         {
             drawBoundingBox(drawManager, b, MColor(1.0f, 0.0f, 1.0f), 3.0f);
         }
 
-        for(auto& b : collisonData.mesh)
+        for(auto& b : meshdata->collisonData.mesh)
         {
             drawBoundingBox(drawManager, b, MColor(0.0f, 0.0f, 1.0f), 1.0f);
 	    }
 
-        for (auto& b : collisonData.smoothmesh)
+        for (auto& b : meshdata->collisonData.smoothmesh)
         {
             drawBoundingBox(drawManager, b, MColor(0.0f, 1.0f, 0.0f), 1.0f);
         }
 
 
-        for (auto v : collisonData.collidedVertecesIdx)
+        for (auto v : meshdata->collisonData.collidedVertecesIdx)
         {
 		    drawManager.setPointSize(8.0f);
             drawManager.setColor(MColor(0.0f, 0.0f, 1.0f));
-		    MPoint p = points[v];
+		    MPoint p = meshdata->m_vertices[v];
 		    drawManager.point(p);
         }
 
-
-
-        for (auto v : collisonData.collidedAllVertecesIdx)
+        for (auto v : meshdata->collisonData.collidedAllVertecesIdx)
         {
             drawManager.setPointSize(8.0f);
             drawManager.setColor(MColor(1.0f, 0.0f, 1.0f));
-            MPoint p = points[v];
+            MPoint p = meshdata->m_vertices[v];
             drawManager.point(p);
         }
 
-        for (auto f : collisonData.filteredFacesIdx)
+        for (auto f : meshdata->collisonData.filteredFacesIdx)
         {
             drawManager.setColor(MColor(1.0f, 0.75f, 0.0f));
-		    auto faceVerts = faceesIDX.at(f);
+		    auto faceVerts = meshdata->faceesIDX.at(f);
 		    MPointArray face;
             for (int i : faceVerts)
             {
-			    face.append(points[i]);
+			    face.append(meshdata->m_vertices[i]);
             }
 
 		    drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, face);
 
         }
 
-
-
-        for (auto f : collisonData.collidedFacesIdx)
+        for (auto f : meshdata->collisonData.collidedFacesIdx)
         {
             drawManager.setColor(MColor(1.0f, 0.0f, 0.0f));
-            auto faceVerts = faceesIDX.at(f);
+            auto faceVerts = meshdata->faceesIDX.at(f);
             MPointArray face;
             for (int i : faceVerts)
             {
-                face.append(points[i]);
+                face.append(meshdata->m_vertices[i]);
             }
 
             drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, face);
 
         }
 
-
-
-        for (auto e : collisonData.collidedEdgesIdx)
+        for (auto e : meshdata->collisonData.collidedEdgesIdx)
         {
             drawManager.setLineWidth(2.0f);
             drawManager.setColor(MColor(0.0f, 1.0f, 0.0f));
-		    auto edgeVerts = edgesIDX.at(e);
-            MPoint p1 = points[edgeVerts.first];
-            MPoint p2 = points[edgeVerts.second];
+		    auto edgeVerts = meshdata->edgesIDX.at(e);
+            MPoint p1 = meshdata->m_vertices[edgeVerts.first];
+            MPoint p2 = meshdata->m_vertices[edgeVerts.second];
 		    drawManager.line(p1, p2);
         }
 
-
-        for (auto& p : collisonData.collidedPoints)
+        for (auto& p : meshdata->collisonData.collidedPoints)
         {
             drawManager.setPointSize(10.0f);
             drawManager.setColor(MColor(0.0f, 0.0f, 1.0f));
             drawManager.point(p);
         }
-   }
+    }
     // Draw green line
     drawManager.setColor(MColor(0.0f, 1.0f, 0.0f));
     drawManager.line(MPoint(0.0, 0.0, 0.0), MPoint(1.0, 1.0, 0.0));
@@ -195,7 +205,6 @@ void MyLocatorDrawOverride::drawBoundingBox(MHWRender::MUIDrawManager& drawManag
     const MColor& color,
     float lineWidth)
 {
-
     MPoint minP = box.min();
     MPoint maxP = box.max();
 

@@ -314,3 +314,18 @@ void DeltaMush::smoothCollidedVertices(std::set<int>& collededVertexes)
 		}
 	}
 }
+
+
+
+MeshData* DeltaMush::createMeshData()
+{
+	return new MeshData(
+		deltaMushFactor, 
+		deltas, m_mesh.getEdgesIndices(), 
+		m_mesh.getFacesIndices(), 
+		m_mesh.getMatricesC(), 
+		m_collisonData, 
+		m_mesh.getVertices(), 
+		m_smooth.getVertices()
+	);
+}
