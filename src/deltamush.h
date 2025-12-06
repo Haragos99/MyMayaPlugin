@@ -24,7 +24,7 @@ public:
 	MeshHandler& getSmoothMeshHandler() { return m_smooth; }
 	std::vector<MPoint> getDeltas() { return deltas; }
 	MeshData* createMeshData();
-
+	void setLocalToWorldMatrix(const MMatrix& matrix);
 
 private:
 	CollisonData m_collisonData;
@@ -35,6 +35,7 @@ private:
 	MeshHandler m_smooth;
 	std::vector<MPoint> deltas;
 	std::set<int> m_filteredIndices;
+	MMatrix m_worldMatrix;
 	MMatrix initMatrix(MPoint point, MVector normal, MVector tangent, MVector bitangent);
 	std::vector<MPoint> scaleDeltas(std::vector<MPoint> originalDeltas, float smooth);
 	void smoothCollidedVertices(std::set<int>& collededVertexes);

@@ -65,6 +65,7 @@ void MyLocatorDrawOverride::addUIDrawables(
    const MeshData* meshdata = dynamic_cast<const MeshData*>(data);
     if(meshdata)
     { 
+		const MMatrix& localToWorld = meshdata->localToWorldMatrix;
         drawManager.beginDrawable();
         MGlobal::displayInfo("SSSSSIt worked");
 
@@ -108,7 +109,7 @@ void MyLocatorDrawOverride::addUIDrawables(
                 delta[1] *= meshdata->factor;
                 delta[2] *= meshdata->factor;
                 MPoint end = meshdata->m_matrcesC[i] * delta;
-                drawManager.line(start, end);
+                drawManager.line(start * localToWorld, end * localToWorld);
             }
         }
 	    int d = meshdata->collisonData.intersected.size();
@@ -132,7 +133,7 @@ void MyLocatorDrawOverride::addUIDrawables(
         {
 		    drawManager.setPointSize(8.0f);
             drawManager.setColor(MColor(0.0f, 0.0f, 1.0f));
-		    MPoint p = meshdata->m_vertices[v];
+		    MPoint p = meshdata->m_vertices[v] * localToWorld;
 		    drawManager.point(p);
         }
 
@@ -140,7 +141,7 @@ void MyLocatorDrawOverride::addUIDrawables(
         {
             drawManager.setPointSize(8.0f);
             drawManager.setColor(MColor(1.0f, 0.0f, 1.0f));
-            MPoint p = meshdata->m_vertices[v];
+            MPoint p = meshdata->m_vertices[v] * localToWorld;
             drawManager.point(p);
         }
 
@@ -151,7 +152,7 @@ void MyLocatorDrawOverride::addUIDrawables(
 		    MPointArray face;
             for (int i : faceVerts)
             {
-			    face.append(meshdata->m_vertices[i]);
+			    face.append(meshdata->m_vertices[i] * localToWorld);
             }
 
 		    drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, face);
@@ -165,7 +166,7 @@ void MyLocatorDrawOverride::addUIDrawables(
             MPointArray face;
             for (int i : faceVerts)
             {
-                face.append(meshdata->m_vertices[i]);
+                face.append(meshdata->m_vertices[i] * localToWorld);
             }
 
             drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, face);
@@ -177,8 +178,8 @@ void MyLocatorDrawOverride::addUIDrawables(
             drawManager.setLineWidth(2.0f);
             drawManager.setColor(MColor(0.0f, 1.0f, 0.0f));
 		    auto edgeVerts = meshdata->edgesIDX.at(e);
-            MPoint p1 = meshdata->m_vertices[edgeVerts.first];
-            MPoint p2 = meshdata->m_vertices[edgeVerts.second];
+            MPoint p1 = meshdata->m_vertices[edgeVerts.first] * localToWorld;
+            MPoint p2 = meshdata->m_vertices[edgeVerts.second] * localToWorld;
 		    drawManager.line(p1, p2);
         }
 
@@ -186,7 +187,7 @@ void MyLocatorDrawOverride::addUIDrawables(
         {
             drawManager.setPointSize(10.0f);
             drawManager.setColor(MColor(0.0f, 0.0f, 1.0f));
-            drawManager.point(p);
+            drawManager.point(p * localToWorld);
         }
     }
     // Draw green line

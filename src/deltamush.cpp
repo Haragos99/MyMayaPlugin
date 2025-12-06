@@ -315,7 +315,10 @@ void DeltaMush::smoothCollidedVertices(std::set<int>& collededVertexes)
 	}
 }
 
-
+void DeltaMush::setLocalToWorldMatrix(const MMatrix& matrix)
+{ 
+	m_worldMatrix = matrix; 
+}
 
 MeshData* DeltaMush::createMeshData()
 {
@@ -326,6 +329,7 @@ MeshData* DeltaMush::createMeshData()
 		m_mesh.getMatricesC(), 
 		m_collisonData, 
 		m_mesh.getVertices(), 
-		m_smooth.getVertices()
+		m_smooth.getVertices(),
+		m_worldMatrix
 	);
 }

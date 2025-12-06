@@ -184,6 +184,7 @@ MStatus DeltaMushNode::deform(MDataBlock& data,
     {
         if (m_deltamush != nullptr)
         {
+			m_deltamush->setLocalToWorldMatrix(localToWorldMatrix);
             m_deltamush->setDeltaMushFactor(smoothing);
             itGeo.allPositions(points);
             if (enableFeature)
