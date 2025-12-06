@@ -43,7 +43,6 @@ MeshHandler DeltaMush::smoothMesh(MeshHandler mesh,int iterations)
 		currentPoints = updatedPoints;
 	}
 	mesh.setVertices(currentPoints);
-	MGlobal::displayInfo("sss");
 
 	return mesh;
 }

@@ -30,19 +30,6 @@ MeshHandler::MeshHandler(const MeshHandler& other)
     m_matrcesC = other.m_matrcesC;
 }
 
-
-void MeshHandler::addcolor(MColorArray colors)
-{
-    // TODO: It kills maya
-    MColor color = MColor(1);
-    //m_fnMesh.setVertexColor(color, 0);
-    //m_fnMesh.setFaceColor(color, 0);
-    MStatus status;
-     // Create Lambert shader
-   
-
-}
-
 void MeshHandler::collectVerticesNearPoint(const MPoint& origin, double threshold)
 {
     for(int i = 0; i < m_vertices.length(); ++i)
@@ -520,11 +507,10 @@ const std::unordered_map<int, std::pair<int, int>>& MeshHandler::getEdgesIndices
     return m_edgeToVerts;
 }
 
-MPoint MeshHandler::getPoint(int index)
+MPoint& MeshHandler::getPoint(int index)
 {
     return m_vertices[index];
 }
-
 
 void MeshHandler::setPoint(int index, MPoint newPoint)
 {

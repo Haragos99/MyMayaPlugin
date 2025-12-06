@@ -34,9 +34,8 @@ public:
 
     // Modifiers
     void setVertices(const MPointArray& points);
+
     void setNormals(const MFloatVectorArray& normals);
-    
-    void addcolor(MColorArray colors);
 
     void recalculateNormals();
 
@@ -58,7 +57,7 @@ public:
 
     void collectVerticesNearPoint(const MPoint& origin, double threshold = 0.1);
 
-    MPoint getPoint(int index);
+    MPoint& getPoint(int index);
 
     void setPoint(int index, MPoint newPoint);
 

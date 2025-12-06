@@ -21,7 +21,6 @@ public:
     static MObject deformerMsgAttr;
     static MTypeId id;
 
-    // --- Overridden methods ---
     MStatus setDependentsDirty(const MPlug& plugBeingDirtied, MPlugArray& affectedPlugs) override;
     std::shared_ptr<DeltaMush> m_deltamush;
 };

@@ -55,7 +55,6 @@ MUserData* MyLocatorDrawOverride::prepareForDraw(
     return data;
 }
 
-// TODO: Refactor for other solution to use MUserData
 void MyLocatorDrawOverride::addUIDrawables(
     const MDagPath& path,
     MHWRender::MUIDrawManager& drawManager,
