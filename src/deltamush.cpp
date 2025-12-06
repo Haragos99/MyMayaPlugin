@@ -215,13 +215,10 @@ void DeltaMush::improvedDM(MPointArray points)
 	MeshHandler smooth = smoothMesh(m_mesh, smoothIterion);
 	IntersectionFilter filter(smooth);
 	filter.filterDefromIntersections(m_mesh.getVertices(), m_mesh, m_filteredIndices);
-	//m_collisonData.collidedVertecesIdx = filter.vertexIndices;
 	m_collisonData.collidedFacesIdx = filter.fIndices;
 	Collison collison = Collison(deltas);
 	filter.initFilteredData(m_mesh);
 	filter.separateFilteredData(collison);
-
-	//m_collisonData.collidedVertecesIdx = vertexesIDX;
 	
 	MGlobal::displayInfo(std::to_string(m_collisonData.intersected.size()).c_str());
 	while(collison.collisondetec(m_mesh, m_smooth, m_collisonData))
@@ -291,28 +288,53 @@ void DeltaMush::projectPointToPlane(const MPoint& P, const MVector& N, MPoint& Q
 	Q = Q - (d * norm);
 }
 
-void DeltaMush::smoothCollidedVertices(std::set<int>& collededVertexes)
+void DeltaMush::smoothCollidedVertices(std::set<int>& collidedVertices)
 {
-	auto& normal = m_mesh.getNormals();
-	for (int i = 0; i < 2; i++)
-	{
-		for (auto v : collededVertexes)
-		{
-			auto actualpoint = m_mesh.getPoint(v);
-			MVector Avg;
-			int n = 0;
-			for (auto vi : m_mesh.getConnectedVertices(v)) {
+	const auto& normals = m_mesh.getNormals();
 
-				auto point = m_mesh.getPoint(vi);
-				projectPointToPlane(actualpoint, normal[v], point);
-				Avg += point;
-				n++;
+	// collect neighbouring vertices (connected to collided ones, but not themselves collided)
+	std::set<int> neighbours;
+	for (int v : collidedVertices) {
+		for (int vi : m_mesh.getConnectedVertices(v)) {
+			if (collidedVertices.find(vi) == collidedVertices.end()) {
+				neighbours.insert(vi);
 			}
-			Avg /= n;
-			actualpoint += strength * (Avg - actualpoint);
-			m_mesh.setPoint(v, actualpoint);
 		}
 	}
+
+	// lambda that encapsulates the smoothing logic
+	auto smoothSet = [&](const std::set<int>& verts, int iterations) 
+	{
+		for (int it = 0; it < iterations; ++it) 
+		{
+			for (int v : verts) 
+			{
+				MVector actualPoint = m_mesh.getPoint(v);
+				MVector avg;   
+				int count = 0;
+
+				for (int vi : m_mesh.getConnectedVertices(v)) {
+					auto point = m_mesh.getPoint(vi);
+					// project neighbour point to the plane defined by the current vertex
+					projectPointToPlane(actualPoint, normals[v], point);
+					avg += point;
+					++count;
+				}
+				if (count == 0)
+				{
+					continue; // safety: avoid division by zero
+				}
+
+				avg /= count;
+				actualPoint += strength * (avg - actualPoint);
+				m_mesh.setPoint(v, actualPoint);
+			}
+		}
+	};
+
+	// apply smoothing: collided vertices 2 iterion, neighbours 1 iterion
+	smoothSet(collidedVertices, 2);
+	smoothSet(neighbours, 1);
 }
 
 void DeltaMush::setLocalToWorldMatrix(const MMatrix& matrix)
