@@ -40,7 +40,7 @@ MStatus initializePlugin(MObject obj) {
         MGlobal::displayInfo("All Nodes regiestered");
     }
 
-    return plugin.registerCommand("helloMaya", MyPluginCmd::creator);
+    return plugin.registerCommand("creataCustomDeltaMush", MyPluginCmd::creator);
 }
 
 MStatus uninitializePlugin(MObject obj) {
