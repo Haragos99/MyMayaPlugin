@@ -1,8 +1,6 @@
 # MyMayaPlugin - Improved Delta Mush Maya Deformer
 
-This repository contains a **Maya plugin** that implements the method from my paper for handling self-intersections in character animation.  
-The implementation uses a third-party **Tight-Inclusion Continuous Collision Detection (CCD)** library to detect collisions and adaptively scale delta vectors. You can find more information in the paper.
-(**Work in progress**) This project is under active development. Performance optimizations and bug fixes are ongoing.
+This repository contains a Maya **plugin** that implements the method from my paper on handling self-intersections in character animation. (**still in development**) 
 
 **Paper:**  
 [Improving Delta Mush Based Character Animation (CESCG 2025)](https://cescg.org/cescg_submission/improving-delta-mush-based-character-animation/)
