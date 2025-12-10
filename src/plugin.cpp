@@ -1,67 +1,32 @@
-#include "plugin.h"
+﻿#include "plugin.h"
 #include "deltamushnode.h"
-
+#include <maya/MFnLambertShader.h>
+#include <maya/MFnSet.h>
+#include "debugdraweroverride.h"
+#include "intersectionfilter.h"
 MCallbackIdArray MyPluginCmd::g_callbackIds;
-std::shared_ptr<DeltaMush> MyPluginCmd::deltamush;
+unsigned int MyPluginCmd::nextId = 0;
 
-
-MStatus MyPluginCmd::smoothMesh(MObject& meshObj, int iterations)
+MyPluginCmd::MyPluginCmd()
 {
-    MStatus status;
-    double smoothingFactor = 0.5;
-    MFnMesh meshFn(meshObj, &status);
-    if (!status) 
-    {
-        return status;
-    }
-    unsigned int vertexCount = meshFn.numVertices();
-    MPointArray currentPoints;
-    meshFn.getPoints(currentPoints, MSpace::kObject);
-
-    for (int i = 0; i < iterations; ++i)
-    {
-        MPointArray updatedPoints = currentPoints;// create copy of the points
-
-        MItMeshVertex itVert(meshObj, &status);
-        if (!status) 
-        { 
-            return status; 
-        }
-
-        while (!itVert.isDone())
-        {
-            int idx = itVert.index();
-            MIntArray connectedVerticesIndices; 
-            itVert.getConnectedVertices(connectedVerticesIndices); // get indeces of the verteces
-            bool hasNeighbors = connectedVerticesIndices.length() > 0;
-            if (hasNeighbors)
-            {
-                MPoint avgPos(0.0, 0.0, 0.0);
-                for (int j = 0; j < connectedVerticesIndices.length(); ++j)
-                {
-                    avgPos += currentPoints[connectedVerticesIndices[j]];
-                }
-                avgPos = avgPos /connectedVerticesIndices.length();
-
-                MVector diff = avgPos - currentPoints[idx];
-                updatedPoints[idx] += diff * smoothingFactor;
-            }
-            
-            itVert.next();
-        }
-        currentPoints = updatedPoints;  
-    }
-    // Apply new positions
-    status = meshFn.setPoints(currentPoints, MSpace::kObject);
-    return status;
+    deformerNodeType = "deltaMushNode";
+    locatorNodeType = "myLocator";
+	nodeId = 0;
 }
-
-
-
-
 
 MStatus MyPluginCmd::doIt(const MArgList&)
 {
+	nodeId = nextId++; // assign and increment unique node ID
+	MStatus status;
+    status = createDeltaMush();
+    status = createDrawLocator();
+    return status;
+}
+
+// Create Delta Mush Deformer 
+MStatus MyPluginCmd::createDeltaMush()
+{
+    MStatus status;
     MSelectionList selection;
     MGlobal::getActiveSelectionList(selection);
 
@@ -70,152 +35,49 @@ MStatus MyPluginCmd::doIt(const MArgList&)
         MGlobal::displayError("No object selected.");
         return MS::kFailure;
     }
-   // selection.add("pCube1");  // pCube1 is the transform, pCubeShape1 is the shape
 
-    /*
-    selection.add("joint1");
-    selection.add("joint2");
-    selection.add("joint3");
+    MFnDependencyNode fnDep;
+    MDagPath dagPath;
+    selection.getDagPath(0, dagPath);  // Get first selected item
+    MGlobal::displayInfo("Add mesh for: " + dagPath.fullPathName());
+    MItSelectionList iter(selection, MFn::kMesh);
+    MObject meshObj;
+    iter.getDependNode(meshObj);
 
-
-
-
-    MObject node;
-    MCallbackId callbackId;
-    for (int i = 1; i < selection.length(); ++i)
+    if (meshObj.isNull())
     {
-
-        selection.getDependNode(i, node);
-        callbackId = MNodeMessage::addAttributeChangedCallback(
-            node,
-            onAttrChanged,
-            nullptr
-        );
-        g_callbackIds.append(callbackId);
-        MFnDependencyNode fn(node);
-        MGlobal::displayInfo("Add callback for: " + fn.name());
-        
+        MGlobal::displayError("No mesh found in selection.");
+        return MS::kFailure;
     }
-    */
-    /*
-        if (!transformNode.isNull())
-        {
+    MString deltaMushNodeName = deformerNodeType + MString("_") + MString(std::to_string(nodeId).c_str());
+    MString cmd;
+    cmd.format("deformer -type \"^1s\" -name \"^2s\" ^3s;", deformerNodeType, deltaMushNodeName, dagPath.fullPathName());
+    MGlobal::executeCommand(cmd);
 
-            MStatus status;
-            //MCallbackId id = MDagMessage::addWorldMatrixModifiedCallback(node, onTransformChanged, nullptr, &status);
-            MCallbackId id = MNodeMessage::addAttributeChangedCallback(
-                transformNode,
-                onAttrChanged,
-                nullptr);
-            if (status != MS::kSuccess)
-            {
-                MGlobal::displayError("Failed to add callback");
-            }
-            else
-            {
-                g_callbackIds.append(id);
-                MFnDependencyNode fn(transformNode);
-                MGlobal::displayInfo("Add callback for: " + fn.name());
-            }
-
-        }
-        */
-        MStatus status;
-        MString nodeType("deltaMushNode");
-        MFnDependencyNode fnDep;
-        MObject node = fnDep.create(nodeType, &status);
-        MDagPath dagPath;
-        selection.getDagPath(0, dagPath);  // Get first selected item
-        MGlobal::displayInfo("Add mesh for: " + dagPath.fullPathName());
-        MItSelectionList iter(selection, MFn::kMesh);
-        MObject meshObj;
-        iter.getDependNode(meshObj);
-
-        if (meshObj.isNull())
-        {
-            MGlobal::displayError("No mesh found in selection.");
-            return MS::kFailure;
-        }
-
-        //smoothMesh(meshObj, 10);
-
-        deltamush = std::make_shared<DeltaMush>(dagPath);
-        deltamush->CalculateDelta();
-        deltamush->CalculateDeformation();
-        DeltaMushNode::g_deltamushCache = deltamush;
-        MString cmd;
-        cmd.format("deformer -type \"^1s\" ^2s;", nodeType, dagPath.fullPathName());
-        MGlobal::executeCommand(cmd);
-
-        MGlobal::displayInfo("Mesh modified successfully.");
-        return MStatus::kSuccess;
+    MGlobal::displayInfo("Delta Mush created");
+	return MS::kSuccess;
 }
 
-
-MStatus MyPluginCmd::createCube()
+// Create Locator for visualizing Deformer
+MStatus MyPluginCmd::createDrawLocator()
 {
-    // When you are using pre-compiled headers, this source file is necessary for compilation to succeed.
-    MStatus status;
+    MString deltaMushNodeName = deformerNodeType + MString("_") + MString(std::to_string(nodeId).c_str());
+    MString locatorName = "myLocator_" + MString(std::to_string(nodeId).c_str());
 
-    // Define the 8 vertices of the cube
-    MPointArray vertices;
-    vertices.append(MPoint(-1.0, -1.0, -1.0)); // Vertex 0
-    vertices.append(MPoint(1.0, -1.0, -1.0)); // Vertex 1
-    vertices.append(MPoint(1.0, -1.0, 1.0)); // Vertex 2
-    vertices.append(MPoint(-1.0, -1.0, 1.0)); // Vertex 3
-    vertices.append(MPoint(-1.0, 1.0, -1.0)); // Vertex 4
-    vertices.append(MPoint(1.0, 1.0, -1.0)); // Vertex 5
-    vertices.append(MPoint(1.0, 1.0, 1.0)); // Vertex 6
-    vertices.append(MPoint(-1.0, 1.0, 1.0)); // Vertex 7
+    MString cmd;
+    cmd.format("createNode myLocator -name \"^1s\";", locatorName);
+    MGlobal::executeCommand(cmd);
 
-    // Define the number of vertices per face (6 faces, each with 4 vertices)
-    MIntArray polygonCounts;
-    for (int i = 0; i < 6; ++i) {
-        polygonCounts.append(4);
+	// create connection between deltaMushNode and locator
+    MStatus status = MGlobal::executeCommand(MString("connectAttr ")
+        + deltaMushNodeName + ".message "
+        + locatorName + ".deformerMessage");
+
+    if (!status) 
+    {
+        MGlobal::displayError("Failed to connect deformer to locator!");
+		return MS::kFailure;
     }
-
-    // Define the vertex indices for each face
-    MIntArray polygonConnects;
-    // Bottom face
-    polygonConnects.append(0); polygonConnects.append(1);
-    polygonConnects.append(2); polygonConnects.append(3);
-    // Top face
-    polygonConnects.append(4); polygonConnects.append(5);
-    polygonConnects.append(6); polygonConnects.append(7);
-    // Front face
-    polygonConnects.append(3); polygonConnects.append(2);
-    polygonConnects.append(6); polygonConnects.append(7);
-    // Back face
-    polygonConnects.append(0); polygonConnects.append(1);
-    polygonConnects.append(5); polygonConnects.append(4);
-    // Left face
-    polygonConnects.append(0); polygonConnects.append(3);
-    polygonConnects.append(7); polygonConnects.append(4);
-    // Right face
-    polygonConnects.append(1); polygonConnects.append(2);
-    polygonConnects.append(6); polygonConnects.append(5);
-
-    // Create the mesh
-    MFnMesh meshFn;
-    MObject mesh = meshFn.create(
-        vertices.length(),            // Number of vertices
-        polygonCounts.length(),       // Number of polygons
-        vertices,                     // Vertex positions
-        polygonCounts,                // Number of vertices per polygon
-        polygonConnects,              // Vertex indices
-        MObject::kNullObj,            // Parent or owner (optional)
-        &status
-    );
-
-    if (status != MStatus::kSuccess) {
-        MGlobal::displayError("Failed to create the cube mesh.");
-        return status;
-    }
-
-    MGlobal::displayInfo("A Cube the mesh created successfully.");
-
+    MGlobal::displayInfo("Locator node created");
+	return MStatus::kSuccess;
 }
-
-
-
-

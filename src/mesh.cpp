@@ -1,6 +1,8 @@
 #include "framework.h"
 #include "mesh.h"
 #include <maya/MString.h>
+#include <maya/MFnLambertShader.h>
+#include <maya/MFnSet.h>
 
 MeshHandler::MeshHandler(const MDagPath& dagpath) : m_dagPath(dagpath), m_fnMesh(dagpath)
 {
@@ -8,6 +10,9 @@ MeshHandler::MeshHandler(const MDagPath& dagpath) : m_dagPath(dagpath), m_fnMesh
     m_fnMesh.getVertexNormals(false,m_normals);
     m_fnMesh.getVertices(m_verticesCounts, m_verticesIndices);
     initConnected();
+    initFaces();
+    initEdges();
+    m_matrcesC.resize(m_vertices.length());
 }
 
 MeshHandler::MeshHandler(const MeshHandler& other)
@@ -19,15 +24,54 @@ MeshHandler::MeshHandler(const MeshHandler& other)
     m_fnMesh(other.m_dagPath) // reinitialize from copied dagPath
 {
     initConnected();
+    initFaces();
+    initEdges();
+    m_matrcesC.resize(m_vertices.length());
+    m_matrcesC = other.m_matrcesC;
 }
 
-
-void MeshHandler::addcolor(MColorArray colors)
+void MeshHandler::collectVerticesNearPoint(const MPoint& origin, double threshold)
 {
-    // TODO: It kills maya
-    MColor color = MColor(1);
-    m_fnMesh.setVertexColor(color, 0);
-    m_fnMesh.setFaceColor(color, 0);
+    for(int i = 0; i < m_vertices.length(); ++i)
+    {
+		MPoint p = m_vertices[i];
+        if (p.distanceTo(origin) <= threshold)
+        {
+            nearbyVertices.insert(i);
+        }
+    }
+
+
+    for(auto face : m_faceToVerts)
+    {
+        auto idx = face.second;
+        for(int i = 0; i < idx.length(); ++i)
+        {
+            MPoint p = m_vertices[idx[i]];
+            if (p.distanceTo(origin) <= threshold)
+            {
+				m_nearby_faceToVerts[face.first] = idx;
+				break;
+            }
+		}
+    }
+
+
+    for(auto edge : m_edgeToVerts)
+    {
+        auto idxs = edge.second;
+		int first_edge = idxs.first;
+		int second_edge = idxs.second;
+		MPoint p1 = m_vertices[first_edge];
+		MPoint p2 = m_vertices[second_edge];
+
+        if (p1.distanceTo(origin) <= threshold || p2.distanceTo(origin) <= threshold)
+        {
+            m_nearby_edgeToVerts[edge.first] = idxs;
+        }
+	}
+
+    MGlobal::displayInfo(MString("Found ") + (int)nearbyVertices.size() + " vertices near point. "+"Faces: "+ (int)m_nearby_faceToVerts.size() + " Edges: " + (int)m_nearby_edgeToVerts.size());
 }
 
 MeshHandler::MeshHandler(const MObject& mesh) : m_fnMesh (mesh)
@@ -38,23 +82,36 @@ MeshHandler::MeshHandler(const MObject& mesh) : m_fnMesh (mesh)
 
     m_fnMesh.getBinormals(m_binormals);
 
-
     int se = m_verticesCounts.length();
     int te = m_verticesIndices.length();
     initConnected();
-
-
+    initFaces();
+    initEdges();
+    m_matrcesC.resize(m_vertices.length());
 }
 
-std::set<int> MeshHandler::getConnectedVertices(int index)
+std::set<int>& MeshHandler::getConnectedVertices(int index)
 {
-    return connected[index];
+    return m_connected[index];
+}
+
+
+void MeshHandler::initConectedVertexToFace()
+{
+	auto vertexIt = getVertexIterator(nullptr);
+    for (;!vertexIt->isDone(); vertexIt->next())
+    {
+		int vIdx = vertexIt->index();
+		MIntArray connectedFaces;
+		vertexIt->getConnectedFaces(connectedFaces);
+		m_vertexToFaces[vIdx] = connectedFaces;
+    }
 }
 
 
 void MeshHandler::initConnected()
 {
-    connected.resize(m_fnMesh.numVertices());
+    m_connected.resize(m_fnMesh.numVertices());
 
     int indexOffset = 0;
     for (unsigned int f = 0; f < m_verticesCounts.length(); ++f)
@@ -64,12 +121,70 @@ void MeshHandler::initConnected()
         {
             int v0 = m_verticesIndices[indexOffset + i];
             int v1 = m_verticesIndices[indexOffset + (i + 1) % count];
-            connected[v0].insert(v1);
-            connected[v1].insert(v0);
+            m_connected[v0].insert(v1);
+            m_connected[v1].insert(v0);
         }
         indexOffset += count;
     }
 }
+
+
+// Create a new MObject representing the mesh with updated vertices
+MObject MeshHandler::getMeshObject()
+{
+    MStatus status;
+
+    // Create an in-memory mesh data container (not visible in the scene)
+    MObject sourceMeshObj = m_fnMesh.object();
+    return sourceMeshObj;
+}
+
+
+void MeshHandler::initFaces()
+{
+    MStatus status;
+    auto polyIt = getPolygonIterator(&status);
+
+    for (; !polyIt->isDone(); polyIt->next()) 
+    {
+		FaceData faceData;
+        int fIdx = polyIt->index(&status);
+		faceData.faceIndex = fIdx;
+        MIntArray faceVerts;
+        polyIt->getVertices(faceVerts);
+		faceData.vertexIndices = faceVerts;
+
+        MIntArray faceEdges;
+		polyIt->getEdges(faceEdges);
+		faceData.edgesIndices = faceEdges;
+
+		m_facesData.push_back(faceData);
+        m_faceToVerts[fIdx] = faceVerts;
+        MIntArray cfaces;
+        polyIt->getConnectedFaces(cfaces);
+		m_connected_face[fIdx] = cfaces;
+    }
+
+	initConectedVertexToFace();
+}
+void MeshHandler::initEdges()
+{
+    MStatus status;
+    auto edgeIt = getEdgeIterator(&status);
+    for (; !edgeIt->isDone(); edgeIt->next()) 
+    {
+        int edgeIndex = edgeIt->index(&status);
+        int v0 = edgeIt->index(0, &status);
+        int v1 = edgeIt->index(1, &status);
+        m_edgeToVerts[edgeIndex] = { v0 ,v1 };
+    }
+}
+void MeshHandler::setMatrix(int idx, const MMatrix& C)
+{
+    m_matrcesC[idx] = C;
+}
+
+
 void MeshHandler::resetNormals()
 {
     m_normals.setLength(m_vertices.length());
@@ -168,11 +283,184 @@ MeshHandler& MeshHandler::operator=(const MeshHandler& other) {
         m_normals = other.m_normals;
         m_verticesCounts = other.m_verticesCounts;
         m_verticesIndices = other.m_verticesIndices;
+        m_faceToVerts = other.m_faceToVerts;
+        m_edgeToVerts = other.m_edgeToVerts;
+		m_connected = other.m_connected;
+        m_fnMesh.setObject(m_dagPath);
+		m_matrcesC.resize(m_vertices.length());
+        m_matrcesC = other.m_matrcesC;
+        
 
     }
     return *this;
 }
 
+MFloatVectorArray MeshHandler::getMeshNormals()
+{
+    MFloatVectorArray normals;
+    MStatus status = m_fnMesh.getVertexNormals(false, normals, MSpace::kObject);
+    if (!status) {
+        MGlobal::displayError("Failed to get mesh normals.");
+    }
+	return normals;
+}
+
+bool MeshHandler::intesectMesh(MPoint point, MVector rayDir)
+{
+
+
+    MFloatVector directions[] = {
+    MFloatVector(1, 0, 0), MFloatVector(0, 1, 0), MFloatVector(0, 0, 1),
+    MFloatVector(1, 1, 1).normal(), MFloatVector(-1, 1, 1).normal(),
+    // ... add more ...
+    };
+    int numRays = 5;
+    int insideVoteCount = 0;
+
+    MFloatPointArray hitPoints;       // Stores the locations of all hits
+
+    // We don't care about the order of hits, just the count
+    bool sortHits = false;
+    // Acceleration parameters (can be left null)
+    MMeshIsectAccelParams accelParams = m_fnMesh.autoUniformGridParams();
+
+    MStatus status;
+    MIntArray* faceIds;
+    // Default tolerance is fine
+    float tolerance = 1e-6f;
+
+    MFloatPoint hitPoint;
+    float hitRayParam = 0.0f;
+    int hitFace = -1;
+    int hitTriangle = -1;
+    float hitBary1 = 0.0f, hitBary2 = 0.0f;
+    bool testBothDirections = false;
+    float maxParam = 1e6f;
+    for (int j = 0; j < 5;j++)
+    {
+		rayDir = directions[j];
+        bool hit = m_fnMesh.closestIntersection(point,
+            rayDir,
+            nullptr,              // faceIds (nullptr => all)
+            nullptr,              // triIds
+            false,                // idsSorted
+            MSpace::kWorld,
+            maxParam,
+            testBothDirections,
+            &accelParams,
+            hitPoint,
+            &hitRayParam,
+            &hitFace,
+            &hitTriangle,
+            &hitBary1,
+            &hitBary2,
+            status);
+        if (!status)
+        {
+            MGlobal::displayWarning("Intersection test failed for point ");
+
+        }
+
+        if (hitPoints.length() % 2 == 1)
+        {
+            MGlobal::displayInfo("Intersected ");
+            return true;
+        }
+    }
+
+	return false;
+}
+
+std::set<int>  MeshHandler::findIndicesWithValue(int value)
+{
+    std::set<int>  indices;
+    for (const auto& [key, pairVal] : m_edgeToVerts)
+    {
+        if (pairVal.first == value || pairVal.second == value)
+        {
+            indices.insert(key);
+        }
+    }
+    return indices;
+}
+
+MPointArray MeshHandler::getTrianglePoints(int faceIndex)
+{
+    MPointArray trianglePoints;
+    MIntArray vertices;
+    m_fnMesh.getPolygonVertices(faceIndex, vertices);
+    for (unsigned int i : vertices){
+		MPoint point = m_vertices[i];
+        trianglePoints.append(point);
+    }
+
+	return trianglePoints;
+}
+
+
+// Compute per-vertex normals by accumulating face normals (area-weighted).
+MFloatVectorArray MeshHandler::computePerVertexNormals()
+{
+    MStatus status;
+    MFloatVectorArray outVertexNormals;
+
+    unsigned int vcount = (unsigned int)m_vertices.length();
+    // Get polygon vertex counts and connects
+
+
+    // Prepare accumulation arrays
+    std::vector<MVector> accum(vcount, MVector::zero);
+
+    // Walk faces, compute face normal and accumulate to its vertices
+    unsigned int connectIndex = 0;
+    for (unsigned int face = 0; face < (unsigned int)m_verticesCounts.length(); ++face) 
+    {
+        int nVerts = m_verticesCounts[face];
+        if (nVerts < 3) {
+            connectIndex += nVerts;
+            continue;
+        }
+
+        // take first triangle fan (0, i, i+1)
+        MVector faceNormal(0.0, 0.0, 0.0);
+        for (int i = 1; i < nVerts - 1; ++i) 
+        {
+
+            unsigned int idx0 = m_verticesIndices[connectIndex + 0];
+            unsigned int idx1 = m_verticesIndices[connectIndex + i];
+            unsigned int idx2 = m_verticesIndices[connectIndex + i + 1];
+
+            MVector v0 = MVector(m_vertices[idx0].x, m_vertices[idx0].y, m_vertices[idx0].z);
+            MVector v1 = MVector(m_vertices[idx1].x, m_vertices[idx1].y, m_vertices[idx1].z);
+            MVector v2 = MVector(m_vertices[idx2].x, m_vertices[idx2].y, m_vertices[idx2].z);
+
+            MVector e1 = v1 - v0;
+            MVector e2 = v2 - v0;
+            MVector triNormal = e1 ^ e2; // cross product (area-weighted)
+            // accumulate triNormal to faceNormal (optional, but we will also add per-vertex)
+            faceNormal += triNormal;
+
+            // accumulate triangle normal to each triangle vertex (area-weighted)
+            accum[idx0] += triNormal;
+            accum[idx1] += triNormal;
+            accum[idx2] += triNormal;
+        }
+
+        connectIndex += nVerts;
+    }
+
+    // normalize accum into outVertexNormals
+    outVertexNormals.clear();
+    outVertexNormals.setLength(vcount);
+    for (unsigned int v = 0; v < vcount; ++v) 
+    {
+        MVector n = accum[v];
+        if (n.length() > 1e-8) n.normalize();
+        outVertexNormals[v] = MFloatVector((float)n.x, (float)n.y, (float)n.z);
+    }
+
+    return outVertexNormals;
+}
 
 
 std::shared_ptr<MItMeshVertex> MeshHandler::getVertexIterator(MStatus* status ) const
@@ -209,6 +497,31 @@ const MIntArray& MeshHandler::getVerticesIndices() const
 }
 
 
+const std::unordered_map<int, MIntArray>& MeshHandler::getFacesIndices() const
+{
+    return m_faceToVerts;
+}
+
+const std::unordered_map<int, std::pair<int, int>>& MeshHandler::getEdgesIndices() const
+{
+    return m_edgeToVerts;
+}
+
+MPoint& MeshHandler::getPoint(int index)
+{
+    return m_vertices[index];
+}
+
+void MeshHandler::setPoint(int index, MPoint newPoint)
+{
+    m_vertices[index] = newPoint;
+}
+
+MMatrix MeshHandler::getMatrixC(int vertexIdx)
+{
+    return m_matrcesC[vertexIdx];
+}
+
 void MeshHandler::setVertices(const MPointArray& points) 
 {
     m_vertices = points;
@@ -228,7 +541,8 @@ void MeshHandler::info()
     msg += " | VertexIndices: "; msg += (int)m_verticesIndices.length();
     msg += " | Binormals: "; msg += (int)m_binormals.length();
     msg += " | Tangents: "; msg += (int)m_tangents.length();
-
+    msg += " | Faces: "; msg += (int)m_faceToVerts.size();
+    msg += " | Edges: "; msg += (int)m_edgeToVerts.size();
     MGlobal::displayInfo(msg);
 }
 
