@@ -41,7 +41,6 @@ void MeshHandler::collectVerticesNearPoint(const MPoint& origin, double threshol
         }
     }
 
-
     for(auto face : m_faceToVerts)
     {
         auto idx = face.second;
@@ -128,7 +127,6 @@ void MeshHandler::initConnected()
     }
 }
 
-
 // Create a new MObject representing the mesh with updated vertices
 MObject MeshHandler::getMeshObject()
 {
@@ -138,7 +136,6 @@ MObject MeshHandler::getMeshObject()
     MObject sourceMeshObj = m_fnMesh.object();
     return sourceMeshObj;
 }
-
 
 void MeshHandler::initFaces()
 {
@@ -184,7 +181,6 @@ void MeshHandler::setMatrix(int idx, const MMatrix& C)
     m_matrcesC[idx] = C;
 }
 
-
 void MeshHandler::resetNormals()
 {
     m_normals.setLength(m_vertices.length());
@@ -212,7 +208,6 @@ PolyData MeshHandler::getPolydata( size_t index, int count)
     return polydat;
 }
 
-
 MVector MeshHandler::computePolyNormal(std::vector<MPoint>& polyVerts, int count)
 {
 
@@ -228,7 +223,6 @@ MVector MeshHandler::computePolyNormal(std::vector<MPoint>& polyVerts, int count
 
     return faceNormal;
 }
-
 
 MPoint MeshHandler::getNextPoint(int index)
 {
@@ -251,7 +245,6 @@ void MeshHandler::calcVerticesNormal(std::vector<int>& polyIndices, MVector face
     }
 }
 
-
 void MeshHandler::normalizeNormals()
 {
     for (int i = 0; i < m_normals.length(); ++i) 
@@ -259,7 +252,6 @@ void MeshHandler::normalizeNormals()
         m_normals[i].normalize();
     }
 }
-
 
 void MeshHandler::recalculateNormals()
 {
@@ -397,7 +389,6 @@ MPointArray MeshHandler::getTrianglePoints(int faceIndex)
 	return trianglePoints;
 }
 
-
 // Compute per-vertex normals by accumulating face normals (area-weighted).
 MFloatVectorArray MeshHandler::computePerVertexNormals()
 {
@@ -405,8 +396,6 @@ MFloatVectorArray MeshHandler::computePerVertexNormals()
     MFloatVectorArray outVertexNormals;
 
     unsigned int vcount = (unsigned int)m_vertices.length();
-    // Get polygon vertex counts and connects
-
 
     // Prepare accumulation arrays
     std::vector<MVector> accum(vcount, MVector::zero);
@@ -416,7 +405,8 @@ MFloatVectorArray MeshHandler::computePerVertexNormals()
     for (unsigned int face = 0; face < (unsigned int)m_verticesCounts.length(); ++face) 
     {
         int nVerts = m_verticesCounts[face];
-        if (nVerts < 3) {
+        if (nVerts < 3) 
+        {
             connectIndex += nVerts;
             continue;
         }
@@ -455,13 +445,15 @@ MFloatVectorArray MeshHandler::computePerVertexNormals()
     for (unsigned int v = 0; v < vcount; ++v) 
     {
         MVector n = accum[v];
-        if (n.length() > 1e-8) n.normalize();
+        if (n.length() > 1e-8)
+        {
+            n.normalize();
+        }
         outVertexNormals[v] = MFloatVector((float)n.x, (float)n.y, (float)n.z);
     }
 
     return outVertexNormals;
 }
-
 
 std::shared_ptr<MItMeshVertex> MeshHandler::getVertexIterator(MStatus* status ) const
 {
@@ -495,7 +487,6 @@ const MIntArray& MeshHandler::getVerticesIndices() const
 {
     return m_verticesIndices;
 }
-
 
 const std::unordered_map<int, MIntArray>& MeshHandler::getFacesIndices() const
 {
@@ -546,13 +537,11 @@ void MeshHandler::info()
     MGlobal::displayInfo(msg);
 }
 
-
 void MeshHandler::updateMesh() {
     m_fnMesh.setPoints(m_vertices, MSpace::kObject);
     //m_fnMesh.setNormals(m_normals, MSpace::kObject);
     m_fnMesh.updateSurface();
 }
-
 
 MeshHandler MeshHandler::createCopy()
 {
@@ -570,7 +559,6 @@ MeshHandler MeshHandler::createCopy()
 
     MObject copiedMeshObj = m_fnMesh.copy(meshObj, newMeshData, &stattus);
 
-
     if (copiedMeshObj.isNull())
     {
         MGlobal::displayError("Copy Object is null");
@@ -583,5 +571,3 @@ MeshHandler MeshHandler::createCopy()
     MGlobal::displayInfo("Copy successfully.");
     return copyMeshHandeler;
 }
-
-

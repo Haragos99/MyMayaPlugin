@@ -12,8 +12,6 @@ Collison::Collison(std::vector<MPoint> v) {
     init(v);
 }
 
-
-
 void Collison::init(std::vector<MPoint> v)
 {
     if (deltas.empty())
@@ -136,7 +134,7 @@ bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth, CollisonDat
                 continue;
             }
 
-            // Convert OpenMesh vertices to Eigen vectors for t1
+            // Convert vertices to Eigen vectors for t1
             Eigen::Vector3f eb0_t1 = toEigenVec(mesh.getPoint(edgesidx2.first));
             Eigen::Vector3f eb1_t1 = toEigenVec(mesh.getPoint(edgesidx2.second));
 
@@ -199,7 +197,6 @@ bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth, CollisonDat
 		edgesIDX = edIDX;
     }
 
-
 	std::string alfastr = "Alfa: " + std::to_string(alfa);
     MGlobal::displayInfo(alfastr.c_str());
     MGlobal::displayInfo(std::to_string(pointsCount).c_str());
@@ -209,11 +206,11 @@ bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth, CollisonDat
 
 void Collison::setRestToi(float newtoi)
 {
-    for (auto& d : deltas)
+    for (auto& delta : deltas)
     {
-        if (!d.isCollied)
+        if (!delta.isCollied)
         {
-            d.toi = newtoi;
+            delta.toi = newtoi;
         }
     }
 }
@@ -228,7 +225,6 @@ void Collison::setSmalest(int vertexIdx, int f, int edegs, int edegs2,MeshHandle
 {
     if (edegs != -1)
     {
-
         auto& edgePoints = mesh.getEdgesIndices().at(edegs);
         deltas[edgePoints.first].toi = alfa;
         deltas[edgePoints.first].isCollied = true;
@@ -246,8 +242,6 @@ void Collison::setSmalest(int vertexIdx, int f, int edegs, int edegs2,MeshHandle
         setMeshTio(edgePoints2.second, mesh);
 		data.collidedEdgesIdx.insert(edegs);
 		data.collidedEdgesIdx.insert(edegs2);
-
-     
     }
     else
     {
@@ -268,8 +262,6 @@ void Collison::setSmalest(int vertexIdx, int f, int edegs, int edegs2,MeshHandle
 		data.collidedVertecesIdx.insert(vertexIdx);
 		data.collidedFacesIdx.insert(f);
 	}
-
-
 }
 
 void Collison::restCollied()

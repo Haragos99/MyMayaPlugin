@@ -2,9 +2,7 @@
 #include "deltamushnode.h"
 
 MTypeId MyLocator::id(0x001226C1);
-
 MObject MyLocator::locatorMsgAttr;
-
 
 MStatus MyLocator::initialize()
 {
@@ -66,33 +64,6 @@ void MyLocatorDrawOverride::addUIDrawables(
     { 
 		const MMatrix& localToWorld = meshdata->localToWorldMatrix;
         drawManager.beginDrawable();
-        MGlobal::displayInfo("SSSSSIt worked");
-
-        for (auto v : meshdata->m_smooth)
-        {
-            //drawManager.setPointSize(8.0f);
-            //drawManager.setColor(MColor(0.0f, 1.0f, 1.0f));
-            //drawManager.point(v);
-        }
-        
-        /*
-		* Smooth mesh draw
-        * 
-        for (auto f : meshdata->faceesIDX)
-        {
-            drawManager.setColor(MColor(1.0f, 1.0f, 0.0f));
-            auto faceVerts = f.second;
-            MPointArray face;
-            for (int i : faceVerts)
-            {
-                face.append(meshdata->m_smooth[i]);
-            }
-
-            drawManager.mesh(MHWRender::MUIDrawManager::kTriangles, face);
-
-        }
-        */
-
         // Draw red point
         drawManager.setColor(MColor(1.0f, 0.0f, 0.0f));
         drawManager.point(MPoint(0.0, 0.0, 0.0));
@@ -195,9 +166,6 @@ void MyLocatorDrawOverride::addUIDrawables(
 
     drawManager.endDrawable();
 }
-
-
-
 
 // Draws a bounding box (outline) for the given box in world space
 void MyLocatorDrawOverride::drawBoundingBox(MHWRender::MUIDrawManager& drawManager,

@@ -8,7 +8,6 @@ private:
     static unsigned int nextId;
 	MStatus createDeltaMush();
     MStatus createDrawLocator();
-    static MCallbackIdArray g_callbackIds;
     MeshHandler smoothMesh(MeshHandler mesh, int iterations);
     MString deformerNodeType;
     MString locatorNodeType;

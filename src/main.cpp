@@ -5,7 +5,6 @@
 #include <maya/MFnPlugin.h>
 
 
-
 MStatus initializePlugin(MObject obj) {
     MFnPlugin plugin(obj, "Haragos", "1.0", "Any");
     MStatus status;

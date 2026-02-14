@@ -2,9 +2,7 @@
 #include "framework.h"
 #include <set>
 
-
 using PolyData = std::pair<std::vector<int>, std::vector<MPoint>>;
-
 
 struct FaceData
 {

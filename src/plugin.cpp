@@ -4,7 +4,6 @@
 #include <maya/MFnSet.h>
 #include "debugdraweroverride.h"
 #include "intersectionfilter.h"
-MCallbackIdArray MyPluginCmd::g_callbackIds;
 unsigned int MyPluginCmd::nextId = 0;
 
 MyPluginCmd::MyPluginCmd()

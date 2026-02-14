@@ -25,7 +25,6 @@ struct CollisonData {
 	}	
 };
 
-
 struct Delta {
 
 public:
@@ -70,7 +69,6 @@ private:
 	std::vector<Delta> deltas;
 	Eigen::Vector3f err = Eigen::Vector3f(-1, -1, -1);  // Error bounds
 
-	
 	float tmax;
 	float tmaxiter;
 	float tolerance;
