@@ -17,7 +17,6 @@
 #include <maya/MItMeshVertex.h>
 #include <maya/MItMeshPolygon.h>
 #include <maya/MItMeshEdge.h>
-#include <maya/MDagPath.h>
 #include <maya/MPoint.h>
 #include <maya/MItSelectionList.h>
 #include <maya/MCallbackIdArray.h>

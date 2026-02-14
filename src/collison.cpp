@@ -1,5 +1,9 @@
 #include "collison.h"
 #include "tight_inclusion/ccd.hpp"
+#include <tbb/parallel_for.h>
+#include <tbb/blocked_range2d.h>
+#include <tbb/concurrent_vector.h>
+#include <limits>
 
 Collison::Collison(std::vector<MPoint> v) {
     err = Eigen::Vector3f(-1, -1, -1);  // Error bounds
@@ -48,6 +52,14 @@ bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth, CollisonDat
     auto& faceIndices = mesh.getNearbyFaces();
     //auto& edgeIndices = mesh.getEdgesIndices();
     MGlobal::displayInfo("Start VF");
+
+
+    MString sizeinfo = "Face Size: "; sizeinfo +=(int)facesIDX.size();
+	sizeinfo += " Edge Size: "; sizeinfo += (int)edgesIDX.size();
+	sizeinfo += " Vertex Size: "; sizeinfo += (int)vertexesIDX.size();
+	MGlobal::displayInfo(sizeinfo);
+    MGlobal::displayInfo("Start VF");
+
     for (int vertexIdx : vertexesIDX)
     {
         if (deltas[vertexIdx].isCollied)
@@ -204,6 +216,204 @@ bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth, CollisonDat
     return isanycollied;
 }
 
+
+
+
+
+
+bool Collison::collisondetecPA(MeshHandler& mesh,
+    MeshHandler& smooth,
+    CollisonData& data)
+{
+
+    vertexes.clear();
+    tois.clear();
+    smallestTio = 1.0f;
+    prevTio = alfa;
+
+    const int pointsCount = mesh.getVertices().length();
+
+    tbb::concurrent_vector<TOIRec> collisions;
+
+    // Snapshot index lists (never iterate shared containers directly)
+    std::vector<int> verts(vertexesIDX.begin(), vertexesIDX.end());
+
+    std::vector<int> faceIds;
+    std::vector<MIntArray> faceVerts;
+    for (auto& f : facesIDX) {
+        faceIds.push_back(f.first);
+        faceVerts.push_back(f.second);
+    }
+
+    std::vector<int> edgeIds;
+    std::vector<std::pair<int, int>> edgeVerts;
+    for (auto& e : edgesIDX) {
+        edgeIds.push_back(e.first);
+        edgeVerts.push_back(e.second);
+    }
+
+
+    tbb::parallel_for(
+        tbb::blocked_range2d<size_t>(0, verts.size(), 0, faceIds.size()),
+        [&](const tbb::blocked_range2d<size_t>& r)
+        {
+            for (size_t vi = r.rows().begin(); vi != r.rows().end(); ++vi) {
+                int vIdx = verts[vi];
+                if (deltas[vIdx].isCollied) continue;
+
+                Eigen::Vector3f v0 = toEigenVec(smooth.getPoint(vIdx));
+                Eigen::Vector3f v1 = toEigenVec(mesh.getPoint(vIdx));
+
+                for (size_t fi = r.cols().begin(); fi != r.cols().end(); ++fi) {
+                    const auto& fvs = faceVerts[fi];
+
+                    if (fvs[0] == vIdx || fvs[1] == vIdx || fvs[2] == vIdx) continue;
+
+                    Eigen::Vector3f f0_0 = toEigenVec(smooth.getPoint(fvs[0]));
+                    Eigen::Vector3f f1_0 = toEigenVec(smooth.getPoint(fvs[1]));
+                    Eigen::Vector3f f2_0 = toEigenVec(smooth.getPoint(fvs[2]));
+
+                    Eigen::Vector3f f0_1 = toEigenVec(mesh.getPoint(fvs[0]));
+                    Eigen::Vector3f f1_1 = toEigenVec(mesh.getPoint(fvs[1]));
+                    Eigen::Vector3f f2_1 = toEigenVec(mesh.getPoint(fvs[2]));
+
+                    float toi = 0.f;
+                    bool hit = ticcd::vertexFaceCCD(
+                        v0, f0_0, f1_0, f2_0,
+                        v1, f0_1, f1_1, f2_1,
+                        err, mc, toi, tolerance, tmax, tmaxiter, tolerance
+                    );
+
+                    if (hit) {
+                        collisions.push_back({ toi, CCDType::VF, vIdx, faceIds[fi] });
+                    }
+                }
+            }
+        });
+
+
+    tbb::parallel_for(
+        tbb::blocked_range2d<size_t>(0, edgeIds.size(), 0, edgeIds.size()),
+        [&](const tbb::blocked_range2d<size_t>& r)
+        {
+            for (size_t i = r.rows().begin(); i != r.rows().end(); ++i) {
+                const auto& eA = edgeVerts[i];
+                if (deltas[eA.first].isCollied || deltas[eA.second].isCollied) continue;
+
+                Eigen::Vector3f a0_0 = toEigenVec(smooth.getPoint(eA.first));
+                Eigen::Vector3f a1_0 = toEigenVec(smooth.getPoint(eA.second));
+                Eigen::Vector3f a0_1 = toEigenVec(mesh.getPoint(eA.first));
+                Eigen::Vector3f a1_1 = toEigenVec(mesh.getPoint(eA.second));
+
+                for (size_t j = r.cols().begin(); j != r.cols().end(); ++j) {
+                    if (j <= i) continue;
+
+                    const auto& eB = edgeVerts[j];
+                    if (eA.first == eB.first || eA.first == eB.second ||
+                        eA.second == eB.first || eA.second == eB.second)
+                        continue;
+
+                    Eigen::Vector3f b0_0 = toEigenVec(smooth.getPoint(eB.first));
+                    Eigen::Vector3f b1_0 = toEigenVec(smooth.getPoint(eB.second));
+                    Eigen::Vector3f b0_1 = toEigenVec(mesh.getPoint(eB.first));
+                    Eigen::Vector3f b1_1 = toEigenVec(mesh.getPoint(eB.second));
+
+                    float toi = 0.f;
+                    bool hit = ticcd::edgeEdgeCCD(
+                        a0_0, a1_0, b0_0, b1_0,
+                        a0_1, a1_1, b0_1, b1_1,
+                        err, mc, toi, tolerance, tmax, tmaxiter, tolerance, true
+                    );
+
+                    if (hit) {
+                        collisions.push_back({ toi, CCDType::EE, -1,-1,
+                                               edgeIds[i], edgeIds[j] });
+                    }
+                }
+            }
+        });
+
+
+    if (collisions.empty())
+        return false;
+
+    int vIdx = -1, fIdx = -1, e1 = -1, e2 = -1;
+
+    for (auto& c : collisions) {
+        tois.push_back(c.toi);
+        if (c.toi < smallestTio) {
+            smallestTio = c.toi;
+            vIdx = c.v; fIdx = c.f;
+            e1 = c.e1; e2 = c.e2;
+        }
+    }
+
+    alfa = smallestTio;
+    prevTio = smallestTio;
+
+
+    std::set<int> nextVerts;
+    std::unordered_map<int, MIntArray> nextFaces;
+    std::unordered_map<int, std::pair<int, int>> nextEdges;
+
+    for (auto& c : collisions) {
+        if (c.type == CCDType::VF) {
+            nextVerts.insert(c.v);
+            auto& fv = facesIDX[c.f];
+            nextFaces[c.f] = fv;
+            for (int vi : fv) nextVerts.insert(vi);
+
+            data.collidedFacesIdx.insert(c.f);
+            data.collidedVertecesIdx.insert(c.v);
+        }
+        else {
+            nextEdges[c.e1] = edgesIDX[c.e1];
+            nextEdges[c.e2] = edgesIDX[c.e2];
+
+            auto& a = edgesIDX[c.e1];
+            auto& b = edgesIDX[c.e2];
+            nextVerts.insert(a.first); nextVerts.insert(a.second);
+            nextVerts.insert(b.first); nextVerts.insert(b.second);
+
+            data.collidedEdgesIdx.insert(c.e1);
+            data.collidedEdgesIdx.insert(c.e2);
+        }
+    }
+
+
+
+
+    setSmalest(vIdx, fIdx, e1, e2, mesh, data);
+    setRestToi(alfa);
+
+    for (int i = 0; i < pointsCount; ++i)
+    {
+        setMeshTio(i, mesh);
+    }
+       
+
+
+    vertexesIDX = std::move(nextVerts);
+    facesIDX = std::move(nextFaces);
+    edgesIDX = std::move(nextEdges);
+
+    std::string alfastr = "Alfa: " + std::to_string(alfa);
+    MGlobal::displayInfo(alfastr.c_str());
+
+    return true;
+}
+
+
+
+
+
+
+
+
+
+
+
+
 void Collison::setRestToi(float newtoi)
 {
     for (auto& delta : deltas)
@@ -223,6 +433,8 @@ void Collison::setMeshTio(int vertexIdx, MeshHandler& mesh)
 
 void Collison::setSmalest(int vertexIdx, int f, int edegs, int edegs2,MeshHandler& mesh, CollisonData& data)
 {
+	std::string msg = "Set smalest toi" + std::to_string(vertexIdx) + " " + std::to_string(f) + " " + std::to_string(edegs) + " " + std::to_string(edegs2);
+	MGlobal::displayInfo(msg.c_str());
     if (edegs != -1)
     {
         auto& edgePoints = mesh.getEdgesIndices().at(edegs);
