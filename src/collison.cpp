@@ -240,34 +240,52 @@ bool Collison::collisondetecPA(MeshHandler& mesh,
 
     std::vector<int> faceIds;
     std::vector<MIntArray> faceVerts;
-    for (auto& f : facesIDX) {
+    for (auto& f : facesIDX) 
+    {
         faceIds.push_back(f.first);
         faceVerts.push_back(f.second);
     }
 
     std::vector<int> edgeIds;
     std::vector<std::pair<int, int>> edgeVerts;
-    for (auto& e : edgesIDX) {
+    for (auto& e : edgesIDX) 
+    {
         edgeIds.push_back(e.first);
         edgeVerts.push_back(e.second);
     }
-
 
     tbb::parallel_for(
         tbb::blocked_range2d<size_t>(0, verts.size(), 0, faceIds.size()),
         [&](const tbb::blocked_range2d<size_t>& r)
         {
-            for (size_t vi = r.rows().begin(); vi != r.rows().end(); ++vi) {
+            for (size_t vi = r.rows().begin(); vi != r.rows().end(); ++vi) 
+            {
                 int vIdx = verts[vi];
-                if (deltas[vIdx].isCollied) continue;
+                if (deltas[vIdx].isCollied)
+                {
+                    continue;
+                } 
 
                 Eigen::Vector3f v0 = toEigenVec(smooth.getPoint(vIdx));
                 Eigen::Vector3f v1 = toEigenVec(mesh.getPoint(vIdx));
 
-                for (size_t fi = r.cols().begin(); fi != r.cols().end(); ++fi) {
+                for (size_t fi = r.cols().begin(); fi != r.cols().end(); ++fi) 
+                {
                     const auto& fvs = faceVerts[fi];
+					MBoundingBox faceBox;
+                    if (fvs[0] == vIdx || fvs[1] == vIdx || fvs[2] == vIdx) 
+                    {
+                        continue; 
+                    }
 
-                    if (fvs[0] == vIdx || fvs[1] == vIdx || fvs[2] == vIdx) continue;
+					faceBox.expand(mesh.getPoint(fvs[0]));
+					faceBox.expand(mesh.getPoint(fvs[1]));
+					faceBox.expand(mesh.getPoint(fvs[2]));
+
+                    if(!faceBox.contains((mesh.getPoint(vIdx))))
+                    {
+                        continue;
+					}
 
                     Eigen::Vector3f f0_0 = toEigenVec(smooth.getPoint(fvs[0]));
                     Eigen::Vector3f f1_0 = toEigenVec(smooth.getPoint(fvs[1]));
@@ -284,7 +302,8 @@ bool Collison::collisondetecPA(MeshHandler& mesh,
                         err, mc, toi, tolerance, tmax, tmaxiter, tolerance
                     );
 
-                    if (hit) {
+                    if (hit) 
+                    {
                         collisions.push_back({ toi, CCDType::VF, vIdx, faceIds[fi] });
                     }
                 }
@@ -296,22 +315,45 @@ bool Collison::collisondetecPA(MeshHandler& mesh,
         tbb::blocked_range2d<size_t>(0, edgeIds.size(), 0, edgeIds.size()),
         [&](const tbb::blocked_range2d<size_t>& r)
         {
-            for (size_t i = r.rows().begin(); i != r.rows().end(); ++i) {
+            for (size_t i = r.rows().begin(); i != r.rows().end(); ++i) 
+            {
                 const auto& eA = edgeVerts[i];
-                if (deltas[eA.first].isCollied || deltas[eA.second].isCollied) continue;
+                if (deltas[eA.first].isCollied || deltas[eA.second].isCollied) 
+                { 
+                    continue; 
+                }
 
                 Eigen::Vector3f a0_0 = toEigenVec(smooth.getPoint(eA.first));
                 Eigen::Vector3f a1_0 = toEigenVec(smooth.getPoint(eA.second));
                 Eigen::Vector3f a0_1 = toEigenVec(mesh.getPoint(eA.first));
                 Eigen::Vector3f a1_1 = toEigenVec(mesh.getPoint(eA.second));
+				MBoundingBox edge1;
+				edge1.expand(mesh.getPoint(eA.first));
+				edge1.expand(mesh.getPoint(eA.second));
+                   
 
-                for (size_t j = r.cols().begin(); j != r.cols().end(); ++j) {
-                    if (j <= i) continue;
-
+                for (size_t j = r.cols().begin(); j != r.cols().end(); ++j) 
+                {
+                    if (j <= i) 
+                    { 
+                        continue;
+                    }
+;
                     const auto& eB = edgeVerts[j];
                     if (eA.first == eB.first || eA.first == eB.second ||
                         eA.second == eB.first || eA.second == eB.second)
+                    {
                         continue;
+                    }
+
+                    MBoundingBox edge2;
+                    edge2.expand(mesh.getPoint(eB.first));
+                    edge2.expand(mesh.getPoint(eB.second));
+
+                    if(!edge1.intersects(edge2))
+                    {
+                         continue;
+					}
 
                     Eigen::Vector3f b0_0 = toEigenVec(smooth.getPoint(eB.first));
                     Eigen::Vector3f b1_0 = toEigenVec(smooth.getPoint(eB.second));
@@ -325,7 +367,8 @@ bool Collison::collisondetecPA(MeshHandler& mesh,
                         err, mc, toi, tolerance, tmax, tmaxiter, tolerance, true
                     );
 
-                    if (hit) {
+                    if (hit) 
+                    {
                         collisions.push_back({ toi, CCDType::EE, -1,-1,
                                                edgeIds[i], edgeIds[j] });
                     }
@@ -333,15 +376,18 @@ bool Collison::collisondetecPA(MeshHandler& mesh,
             }
         });
 
-
     if (collisions.empty())
+    {
         return false;
+    }
 
     int vIdx = -1, fIdx = -1, e1 = -1, e2 = -1;
 
-    for (auto& c : collisions) {
+    for (auto& c : collisions) 
+    {
         tois.push_back(c.toi);
-        if (c.toi < smallestTio) {
+        if (c.toi < smallestTio) 
+        {
             smallestTio = c.toi;
             vIdx = c.v; fIdx = c.f;
             e1 = c.e1; e2 = c.e2;
@@ -356,17 +402,23 @@ bool Collison::collisondetecPA(MeshHandler& mesh,
     std::unordered_map<int, MIntArray> nextFaces;
     std::unordered_map<int, std::pair<int, int>> nextEdges;
 
-    for (auto& c : collisions) {
-        if (c.type == CCDType::VF) {
+    for (auto& c : collisions) 
+    {
+        if (c.type == CCDType::VF) 
+        {
             nextVerts.insert(c.v);
             auto& fv = facesIDX[c.f];
             nextFaces[c.f] = fv;
-            for (int vi : fv) nextVerts.insert(vi);
+            for (int vi : fv) 
+            { 
+                nextVerts.insert(vi); 
+            }
 
             data.collidedFacesIdx.insert(c.f);
             data.collidedVertecesIdx.insert(c.v);
         }
-        else {
+        else 
+        {
             nextEdges[c.e1] = edgesIDX[c.e1];
             nextEdges[c.e2] = edgesIDX[c.e2];
 
@@ -379,9 +431,6 @@ bool Collison::collisondetecPA(MeshHandler& mesh,
             data.collidedEdgesIdx.insert(c.e2);
         }
     }
-
-
-
 
     setSmalest(vIdx, fIdx, e1, e2, mesh, data);
     setRestToi(alfa);

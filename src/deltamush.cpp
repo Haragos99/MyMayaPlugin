@@ -219,7 +219,7 @@ void DeltaMush::improvedDM(MPointArray points)
 	filter.separateFilteredData(collison);
 	
 	MGlobal::displayInfo(std::to_string(m_collisonData.intersected.size()).c_str());
-	while(collison.collisondetec(m_mesh, m_smooth, m_collisonData))
+	while(collison.collisondetecPA(m_mesh, m_smooth, m_collisonData))
 	{
 		CCDDeformation();
 		float alfa = collison.getAlfa();
