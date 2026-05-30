@@ -228,6 +228,7 @@ void DeltaMush::improvedDM(MPointArray points)
 	}
 	
 	m_collisonData.collidedAllVertecesIdx = collison.vertexes;
+	MGlobal::displayInfo(MString("Collison ") + collison.vertexes.size() + " count");
 	smoothCollidedVertices(collison.vertexes);
 	auto end = std::chrono::high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();

@@ -226,7 +226,6 @@ bool Collison::collisondetecPA(MeshHandler& mesh,
     CollisonData& data)
 {
 
-    vertexes.clear();
     tois.clear();
     smallestTio = 1.0f;
     prevTio = alfa;
@@ -412,10 +411,13 @@ bool Collison::collisondetecPA(MeshHandler& mesh,
             for (int vi : fv) 
             { 
                 nextVerts.insert(vi); 
+                vertexes.insert(vi);
             }
-
+			//MGlobal::displayInfo(MString("Collided Face: ") + c.f + " Vertex: " + c.v);
             data.collidedFacesIdx.insert(c.f);
             data.collidedVertecesIdx.insert(c.v);
+			vertexes.insert(c.v);
+
         }
         else 
         {
@@ -426,9 +428,10 @@ bool Collison::collisondetecPA(MeshHandler& mesh,
             auto& b = edgesIDX[c.e2];
             nextVerts.insert(a.first); nextVerts.insert(a.second);
             nextVerts.insert(b.first); nextVerts.insert(b.second);
-
+            //MGlobal::displayInfo(MString("Collided Edges: ") + c.e1 + " and " + c.e2);
             data.collidedEdgesIdx.insert(c.e1);
             data.collidedEdgesIdx.insert(c.e2);
+			vertexes.insert(a.first); vertexes.insert(a.second);
         }
     }
 
@@ -453,16 +456,6 @@ bool Collison::collisondetecPA(MeshHandler& mesh,
 }
 
 
-
-
-
-
-
-
-
-
-
-
 void Collison::setRestToi(float newtoi)
 {
     for (auto& delta : deltas)
@@ -482,7 +475,7 @@ void Collison::setMeshTio(int vertexIdx, MeshHandler& mesh)
 
 void Collison::setSmalest(int vertexIdx, int f, int edegs, int edegs2,MeshHandler& mesh, CollisonData& data)
 {
-	std::string msg = "Set smalest toi" + std::to_string(vertexIdx) + " " + std::to_string(f) + " " + std::to_string(edegs) + " " + std::to_string(edegs2);
+	std::string msg = "Set smalest toi " + std::to_string(vertexIdx) + " " + std::to_string(f) + " " + std::to_string(edegs) + " " + std::to_string(edegs2);
 	MGlobal::displayInfo(msg.c_str());
     if (edegs != -1)
     {

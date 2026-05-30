@@ -26,8 +26,6 @@ struct CollisonData {
 };
 
 
-
-
 enum class CCDType { VF, EE };
 
 struct TOIRec {
