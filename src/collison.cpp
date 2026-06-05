@@ -218,9 +218,6 @@ bool Collison::collisondetec(MeshHandler& mesh, MeshHandler& smooth, CollisonDat
 
 
 
-
-
-
 bool Collison::collisondetecPA(MeshHandler& mesh,
     MeshHandler& smooth,
     CollisonData& data)

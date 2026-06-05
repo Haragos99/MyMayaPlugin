@@ -28,6 +28,15 @@ IntersectionFilter::IntersectionFilter(MeshHandler& target)
 
 }
 
+/// <summary>
+/// Computes filtered indices based on intersections between an input point array and a target mesh. 
+/// The method expands the result to include connected vertices and faces, updates the object's vertex and face index sets,
+/// and logs the number of vertices found.
+/// </summary>
+/// <param name="original:">Array of points (MPointArray) used to compute intersections against the target mesh.</param>
+/// <param name="target:">MeshHandler providing mesh connectivity queries (e.g., connected vertices and faces) used to expand affected indices.</param>
+/// <param name="filtered:">Initial set of indices to seed the intersection calculation; used as input to determine which indices to process.</param>
+/// <returnsindices of the intersections vertices.</returns>
 std::set<int> IntersectionFilter::filterDefromIntersections(const MPointArray& original, MeshHandler& target, std::set<int> filtered)
 {
 	std::set<int> filteredIndices = clalculateIntersections(original, target, filtered);
@@ -69,7 +78,12 @@ std::set<int> IntersectionFilter::filterDefromIntersections(const MPointArray& o
 	return filteredIndices;
 }
 
-
+/// <summary>
+/// filter the unnesarzy intersections by returning the indices of the vertices that are intersecting with the target mesh.
+/// </summary>
+/// <param name="original:"></param>
+/// <param name="target:"></param>
+/// <returns>indices of the intersections vertices</returns>
 std::set<int> IntersectionFilter::filterFirstIntersections(const MPointArray& original, MeshHandler& target)
 {
 	std::set<int> empty;
@@ -82,26 +96,23 @@ std::set<int> IntersectionFilter::filterFirstIntersections(const MPointArray& or
 	return filterVertexIndices;
 }
 
+/// <summary>
+/// return the indices of the vertices that are intersecting with the target mesh. 
+/// It also takes a set of filtered indices to avoid checking them again.
+/// </summary>
+/// <param name="original:">Points of the original mesh</param>
+/// <param name="target:">meshhandel of the original mesh</param>
+/// <param name="filtered:">the filtered verteces idx </param>s
+/// <returns>indices of the intersections vertices indices</returns>
 std::set<int> IntersectionFilter::clalculateIntersections(const MPointArray& original, MeshHandler& target, std::set<int> filtered)
 {
 	target.updateMesh();
 	target.recalculateNormals();
 	double epsilon = 1e-6;
 	auto normlas = target.getMeshNormals();
-	MMeshIsectAccelParams accelParams;
-	accelParams = target.getIntersectParameters();
-	bool sortHits = false;
-	float tolerance = 0.0001f;
-	MFloatPointArray hitPoints;
-	MFloatArray hitRayParams;
-	MIntArray hitFaces;
-	MIntArray hitTriangles;
-	MFloatArray hitBary1;
-	MFloatArray hitBary2;
-	MFloatPoint hitpoint;
 	double bias = 1e-4;
-	std::vector<MPoint> coints;
-	std::set<int> collisionPoints;
+	std::vector<MPoint> collisionPoints;
+	std::set<int> collisionPointsIdx;
 	auto vertIt = target.getVertexIterator(nullptr);
 	for (; !vertIt->isDone(); vertIt->next())
 	{
@@ -114,34 +125,26 @@ std::set<int> IntersectionFilter::clalculateIntersections(const MPointArray& ori
 
 		MPoint orignalPoint = original[i];    
 		MFloatVector normal = -normlas[i];
-		auto raySource = MFloatPoint(orignalPoint[0], orignalPoint[1], orignalPoint[2], 1.0);
-
-		auto rayDir = MFloatVector(normal[0], normal[1], normal[2]);
-		bool hit = meshFn.allIntersections(raySource, rayDir, NULL, NULL, false, MSpace::kObject, 99999, false, &accelParams, false,
-			hitPoints, &hitRayParams, &hitFaces, &hitTriangles, &hitBary1, &hitBary2, 0.000001f);
-
-		if (hit)
+		MPointOnMesh closest;
+		auto f = m_intersector.getClosestPoint(orignalPoint, closest);
+		if (f != MS::kSuccess)
 		{
-			MPointOnMesh closest;
-			auto f = m_intersector.getClosestPoint(orignalPoint, closest);
-			if (f != MS::kSuccess)
-			{
-				continue;
-			}
-			MPoint closestPoint = closest.getPoint();
-			MFloatVector closestnormal = closest.getNormal();
+			continue;
+		}
+		MPoint closestPoint = closest.getPoint();
+		MFloatVector closestnormal = closest.getNormal();
+		auto delta = orignalPoint - closestPoint;
 
-			auto delta = orignalPoint - closestPoint;
-			//collision check with dot product
-			auto angle = delta * closestnormal;
-			if (angle <= 0)
-			{
-				collisionPoints.insert(i);
-				coints.push_back(orignalPoint);
-			}
+		//collision check with dot product
+		auto angle = delta * closestnormal;
+		if (angle <= 0)
+		{
+			collisionPointsIdx.insert(i);
+			collisionPoints.push_back(orignalPoint);
 		}
 	}
-	return collisionPoints;
+
+	return collisionPointsIdx;
 }
 
 void IntersectionFilter::separateFilteredData(Collison& data)
