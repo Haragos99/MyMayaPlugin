@@ -375,10 +375,6 @@ bool Collison::collisondetecPA(MeshHandler& mesh,
             }
         });
 
-    if (collisions.empty())
-    {
-        return false;
-    }
 
     int vIdx = -1, fIdx = -1, e1 = -1, e2 = -1;
 
@@ -410,10 +406,8 @@ bool Collison::collisondetecPA(MeshHandler& mesh,
             nextFaces[c.f] = fv;
             for (int vi : fv) 
             { 
-                nextVerts.insert(vi); 
                 vertexes.insert(vi);
             }
-			//MGlobal::displayInfo(MString("Collided Face: ") + c.f + " Vertex: " + c.v);
             data.collidedFacesIdx.insert(c.f);
             data.collidedVertecesIdx.insert(c.v);
 			vertexes.insert(c.v);
@@ -428,7 +422,6 @@ bool Collison::collisondetecPA(MeshHandler& mesh,
             auto& b = edgesIDX[c.e2];
             nextVerts.insert(a.first); nextVerts.insert(a.second);
             nextVerts.insert(b.first); nextVerts.insert(b.second);
-            //MGlobal::displayInfo(MString("Collided Edges: ") + c.e1 + " and " + c.e2);
             data.collidedEdgesIdx.insert(c.e1);
             data.collidedEdgesIdx.insert(c.e2);
 			vertexes.insert(a.first); vertexes.insert(a.second);
@@ -442,7 +435,6 @@ bool Collison::collisondetecPA(MeshHandler& mesh,
     {
         setMeshTio(i, mesh);
     }
-       
 
 
     vertexesIDX = std::move(nextVerts);
@@ -452,7 +444,7 @@ bool Collison::collisondetecPA(MeshHandler& mesh,
     std::string alfastr = "Alfa: " + std::to_string(alfa);
     MGlobal::displayInfo(alfastr.c_str());
 
-    return true;
+	return !collisions.empty(); // Return true if any collision was detected
 }
 
 
@@ -477,23 +469,30 @@ void Collison::setSmalest(int vertexIdx, int f, int edegs, int edegs2,MeshHandle
 {
 	std::string msg = "Set smalest toi " + std::to_string(vertexIdx) + " " + std::to_string(f) + " " + std::to_string(edegs) + " " + std::to_string(edegs2);
 	MGlobal::displayInfo(msg.c_str());
-    if (edegs != -1)
+    if (edegs != -1 || edegs2 != -1)
     {
         auto& edgePoints = mesh.getEdgesIndices().at(edegs);
+
+		// Set TOI for the vertices of the colliding edge
         deltas[edgePoints.first].toi = alfa;
         deltas[edgePoints.first].isCollied = true;
         setMeshTio(edgePoints.first, mesh);
+
+		// Set TOI for the second vertex of the colliding edge
         deltas[edgePoints.second].toi = alfa;
         deltas[edgePoints.second].isCollied = true;
         setMeshTio(edgePoints.second, mesh);
 
         auto& edgePoints2 = mesh.getEdgesIndices().at(edegs2);
+
         deltas[edgePoints2.first].toi = alfa;
         deltas[edgePoints2.first].isCollied = true;
         setMeshTio(edgePoints2.first, mesh);
+
         deltas[edgePoints2.second].toi = alfa;
         deltas[edgePoints2.second].isCollied = true;
         setMeshTio(edgePoints2.second, mesh);
+
 		data.collidedEdgesIdx.insert(edegs);
 		data.collidedEdgesIdx.insert(edegs2);
     }
