@@ -1,5 +1,6 @@
 #include "deltamush.h"
 #include <chrono>
+#include <fstream>
 #include "intersectionfilter.h"
 #include <tbb/parallel_for.h>
 
@@ -204,28 +205,136 @@ void DeltaMush::test(MPointArray points)
 
 void DeltaMush::improvedDM(MPointArray points)
 {
+	int frame = static_cast<int>(
+		MAnimControl::currentTime().as(MTime::uiUnit()));
+	std::ofstream log("C:\\Users\\Geri\\Documents\\Projects\\CG\\MyMayaPlugin\\ImprovedDM_Log.txt", std::ios::app);
+
+	if (!log)
+	{
+		MGlobal::displayError("File open failed!");
+	}
+
+	log << "Frame: " << frame << "\n";
+
+
+	auto totalStart = std::chrono::high_resolution_clock::now();
 	m_mesh.setVertices(points);
 	MGlobal::displayInfo("Start");
 	CalculateDeformation();
 	m_collisonData.clear();
 
 	auto start = std::chrono::high_resolution_clock::now();
+
+	// Smoothing
+	auto t0 = std::chrono::high_resolution_clock::now();
 	MeshHandler smooth = smoothMesh(m_mesh, smoothIterion);
+	auto t1 = std::chrono::high_resolution_clock::now();
+
+	log << "Smooth time: "
+		<< std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
+		<< " ms\n";
+
+
+	// Intersection filtering
+	t0 = std::chrono::high_resolution_clock::now();
+
 	IntersectionFilter filter(smooth);
 	filter.filterDefromIntersections(m_mesh.getVertices(), m_mesh, m_filteredIndices);
+
+	t1 = std::chrono::high_resolution_clock::now();
+
 	m_collisonData.collidedFacesIdx = filter.fIndices;
+	log << "Filter time: "
+		<< std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
+		<< " ms\n";
+
+	log << "Filtered Faces: "
+		<< filter.fIndices.size() << "\n";
+
 	Collison collison = Collison(deltas);
 	filter.initFilteredData(m_mesh);
 	filter.separateFilteredData(collison);
-	
+
+	log << "Intersected Objects: "
+		<< m_collisonData.intersected.size() << "\n";
+
 	MGlobal::displayInfo(std::to_string(m_collisonData.intersected.size()).c_str());
-	while(collison.collisondetecPA(m_mesh, m_smooth, m_collisonData))
+
+
+	// Collision detection loop
+	int iteration = 1;
+	while (true)
 	{
+		iteration++;
+
+		auto collisionStart = std::chrono::high_resolution_clock::now();
+
+		bool hasCollision =
+			collison.collisondetecPA(m_mesh, m_smooth, m_collisonData);
+
+		auto collisionEnd = std::chrono::high_resolution_clock::now();
+
+		auto collisionTime =
+			std::chrono::duration_cast<std::chrono::milliseconds>(
+				collisionEnd - collisionStart).count();
+
+		log << "\nIteration " << iteration << "\n";
+		log << "Collision detected: "
+			<< (hasCollision ? "YES" : "NO") << "\n";
+		log << "Collision Detection Time: "
+			<< collisionTime << " ms\n";
+
+		if (!hasCollision)
+			break;
+
+		auto deformStart = std::chrono::high_resolution_clock::now();
+
 		CCDDeformation();
-		float alfa = collison.getAlfa();
-		int percent = alfa * 100;
+
+		auto deformEnd = std::chrono::high_resolution_clock::now();
+
+		auto deformTime =
+			std::chrono::duration_cast<std::chrono::milliseconds>(
+				deformEnd - deformStart).count();
+
+		float alpha = collison.getAlfa();
+
+		log << std::fixed << std::setprecision(6);
+		log << "Alpha: " << alpha << "\n";
+		log << "CCD Deformation Time: "
+			<< deformTime << " ms\n";
+
+		log << "Collided Vertices: "
+			<< collison.vertexes.size() << "\n";
+
+		log << "Collided Faces: "
+			<< m_collisonData.collidedFacesIdx.size() << "\n";
+
 		collison.setAlfa(0);
 	}
+
+	// Final smoothing
+
+	m_collisonData.collidedAllVertecesIdx = collison.vertexes;
+
+	auto smoothStart = std::chrono::high_resolution_clock::now();
+
+	smoothCollidedVertices(collison.vertexes);
+
+	auto smoothEnd = std::chrono::high_resolution_clock::now();
+
+	log << "\nFinal Smooth Time: "
+		<< std::chrono::duration_cast<std::chrono::milliseconds>(
+			smoothEnd - smoothStart).count()
+		<< " ms\n";
+
+
+	// Total execution
+	auto totalEnd = std::chrono::high_resolution_clock::now();
+
+	auto totalTime =
+		std::chrono::duration_cast<std::chrono::milliseconds>(
+			totalEnd - totalStart).count();
 	
 	m_collisonData.collidedAllVertecesIdx = collison.vertexes;
 	MGlobal::displayInfo(MString("Collison ") + collison.vertexes.size() + " count");
@@ -233,6 +342,18 @@ void DeltaMush::improvedDM(MPointArray points)
 	auto end = std::chrono::high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
+
+
+	log << "\n========== Summary ==========\n";
+	log << "Iterations: " << iteration << "\n";
+	log << "Final Collided Vertices: "
+		<< collison.vertexes.size() << "\n";
+	log << "Final Collided Faces: "
+		<< m_collisonData.collidedFacesIdx.size() << "\n";
+	log << "Total Execution Time: "
+		<< totalTime << " ms\n";
+
+	log.close();
 	MGlobal::displayInfo(MString("Execution time: ") + duration + " ms");
 	m_mesh.updateMesh();
 }

@@ -36,4 +36,5 @@
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnMatrixAttribute.h>
 #include <maya/MFnTypedAttribute.h>
+#include <maya/MAnimControl.h>
 #include <maya/MMeshIntersector.h>
