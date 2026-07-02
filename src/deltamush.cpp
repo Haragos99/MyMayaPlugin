@@ -206,26 +206,26 @@ void DeltaMush::test(MPointArray points)
 
 void DeltaMush::improvedDM(MPointArray points)
 {
-	Logger::Open("C:\\Users\\Geri\\Documents\\Projects\\CG\\MyMayaPlugin\\ImprovedDM_Log.txt");
+	IMDLogger::Open("C:\\Users\\Geri\\Documents\\Projects\\CG\\MyMayaPlugin\\ImprovedDM_Log.txt");
 	int frame = static_cast<int>(
 		MAnimControl::currentTime().as(MTime::uiUnit()));
 
-	Logger::Log("==================================================");
-	Logger::Log("Frame", frame);
+	IMDLogger::Log("==================================================");
+	IMDLogger::Log("Frame", frame);
 
-	Logger::BeginTimer("Improved Delta Mush");
+	IMDLogger::BeginTimer("Improved Delta Mush");
 
 	m_mesh.setVertices(points);
 	CalculateDeformation();
 	m_collisonData.clear();
 
 	// Smooth mesh
-	Logger::BeginTimer("Smooth Mesh");
+	IMDLogger::BeginTimer("Smooth Mesh");
 	MeshHandler smooth = smoothMesh(m_mesh, smoothIterion);
-	Logger::EndTimer("Smooth Mesh");
+	IMDLogger::EndTimer("Smooth Mesh");
 
 	// Filter intersections
-	Logger::BeginTimer("Intersection Filter");
+	IMDLogger::BeginTimer("Intersection Filter");
 
 	IntersectionFilter filter(smooth);
 	filter.filterDefromIntersections(
@@ -235,16 +235,16 @@ void DeltaMush::improvedDM(MPointArray points)
 
 	m_collisonData.collidedFacesIdx = filter.fIndices;
 
-	Logger::EndTimer("Intersection Filter");
+	IMDLogger::EndTimer("Intersection Filter");
 
-	Logger::Log("Filtered Faces", filter.fIndices.size());
+	IMDLogger::Log("Filtered Faces", filter.fIndices.size());
 
 	Collison collison(deltas);
 
 	filter.initFilteredData(m_mesh);
 	filter.separateFilteredData(collison);
 
-	Logger::Log("Intersected Objects",
+	IMDLogger::Log("Intersected Objects",
 		m_collisonData.intersected.size());
 
 	int iteration = 0;
@@ -253,10 +253,10 @@ void DeltaMush::improvedDM(MPointArray points)
 	{
 		iteration++;
 
-		Logger::Log("------------------------------");
-		Logger::Log("Iteration", iteration);
+		IMDLogger::Log("------------------------------");
+		IMDLogger::Log("Iteration", iteration);
 
-		Logger::BeginTimer("Collision Detection");
+		IMDLogger::BeginTimer("Collision Detection");
 
 		bool hasCollision =
 			collison.collisondetecPA(
@@ -264,24 +264,24 @@ void DeltaMush::improvedDM(MPointArray points)
 				m_smooth,
 				m_collisonData);
 
-		Logger::EndTimer("Collision Detection");
+		IMDLogger::EndTimer("Collision Detection");
 
-		Logger::Log("Collision Detected",
+		IMDLogger::Log("Collision Detected",
 			hasCollision ? "YES" : "NO");
 
 		if (!hasCollision)
 			break;
 
-		Logger::BeginTimer("CCD Deformation");
+		IMDLogger::BeginTimer("CCD Deformation");
 
 		CCDDeformation();
 
-		Logger::EndTimer("CCD Deformation");
+		IMDLogger::EndTimer("CCD Deformation");
 
-		Logger::Log("Alpha", collison.getAlfa());
-		Logger::Log("Collided Vertices",
+		IMDLogger::Log("Alpha", collison.getAlfa());
+		IMDLogger::Log("Collided Vertices",
 			collison.vertexes.size());
-		Logger::Log("Collided Faces",
+		IMDLogger::Log("Collided Faces",
 			m_collisonData.collidedFacesIdx.size());
 
 		collison.setAlfa(0);
@@ -289,25 +289,25 @@ void DeltaMush::improvedDM(MPointArray points)
 
 	m_collisonData.collidedAllVertecesIdx = collison.vertexes;
 
-	Logger::BeginTimer("Final Smoothing");
+	IMDLogger::BeginTimer("Final Smoothing");
 
 	smoothCollidedVertices(collison.vertexes);
 
-	Logger::EndTimer("Final Smoothing");
+	IMDLogger::EndTimer("Final Smoothing");
 
 	double totalTime =
-		Logger::EndTimer("Improved Delta Mush");
+		IMDLogger::EndTimer("Improved Delta Mush");
 
-	Logger::Log("========== Summary ==========");
-	Logger::Log("Iterations", iteration);
-	Logger::Log("Final Collided Vertices",
+	IMDLogger::Log("========== Summary ==========");
+	IMDLogger::Log("Iterations", iteration);
+	IMDLogger::Log("Final Collided Vertices",
 		collison.vertexes.size());
-	Logger::Log("Final Collided Faces",
+	IMDLogger::Log("Final Collided Faces",
 		m_collisonData.collidedFacesIdx.size());
-	Logger::Log("Total Execution Time (ms)",
+	IMDLogger::Log("Total Execution Time (ms)",
 		totalTime);
 
-	Logger::Flush();
+	IMDLogger::Flush();
 
 	MGlobal::displayInfo(
 		MString("Execution time: ") + totalTime + " ms");

@@ -2,14 +2,14 @@
 
 #include <maya/MGlobal.h>
 
-std::ofstream Logger::file;
-bool Logger::enabled = false;
+std::ofstream IMDLogger::file;
+bool IMDLogger::enabled = false;
 std::unordered_map<
     std::string,
     std::chrono::high_resolution_clock::time_point>
-    Logger::timers;
+    IMDLogger::timers;
 
-bool Logger::Open(const std::string& filename)
+bool IMDLogger::Open(const std::string& filename)
 {
     if (!enabled)
         return true;
@@ -22,7 +22,7 @@ bool Logger::Open(const std::string& filename)
     return file.is_open();
 }
 
-void Logger::Close()
+void IMDLogger::Close()
 {
     if (!enabled)
         return;
@@ -31,7 +31,7 @@ void Logger::Close()
         file.close();
 }
 
-void Logger::Log(const std::string& message)
+void IMDLogger::Log(const std::string& message)
 {
     if (!enabled || !file.is_open())
         return;
@@ -39,7 +39,7 @@ void Logger::Log(const std::string& message)
     file << message << std::endl;
 }
 
-void Logger::Flush()
+void IMDLogger::Flush()
 {
     if (!enabled || !file.is_open())
         return;
@@ -47,13 +47,13 @@ void Logger::Flush()
     file.flush();
 }
 
-void Logger::BeginTimer(const std::string& name)
+void IMDLogger::BeginTimer(const std::string& name)
 {
     timers[name] =
         std::chrono::high_resolution_clock::now();
 }
 
-double Logger::EndTimer(const std::string& name)
+double IMDLogger::EndTimer(const std::string& name)
 {
     auto it = timers.find(name);
 
@@ -76,12 +76,12 @@ double Logger::EndTimer(const std::string& name)
     return ms;
 }
 
-void Logger::Enable(bool enable)
+void IMDLogger::Enable(bool enable)
 {
     enabled = enable;
 }
 
-bool Logger::IsEnabled()
+bool IMDLogger::IsEnabled()
 {
     return enabled;
 }

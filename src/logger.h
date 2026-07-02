@@ -5,7 +5,12 @@
 #include <unordered_map>
 #include <chrono>
 
-class Logger
+/// <summary>
+/// This class provides logging information for Improved Delta Mush (IMD) operations. 
+/// It allows for logging messages, timing operations, and writing logs to a specified file. 
+/// The logger can be enabled or disabled as needed.
+/// </summary>
+class IMDLogger
 {
 public:
 

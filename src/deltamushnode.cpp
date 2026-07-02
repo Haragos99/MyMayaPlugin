@@ -227,10 +227,10 @@ MStatus DeltaMushNode::deform(MDataBlock& data,
                 {
                     bool enableLogging = data.inputValue(aEnableLogging).asBool();
                     MString filePath = data.inputValue(aLogFilePath).asString();
-                    Logger::Enable(enableLogging);
-					Logger::Open(filePath.asChar());
+                    IMDLogger::Enable(enableLogging);
+					IMDLogger::Open(filePath.asChar());
                     m_deltamush->improvedDM(points);
-					Logger::Close();
+					IMDLogger::Close();
                 }
             }
             else
