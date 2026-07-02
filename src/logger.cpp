@@ -24,6 +24,9 @@ bool Logger::Open(const std::string& filename)
 
 void Logger::Close()
 {
+    if (!enabled)
+        return;
+
     if (file.is_open())
         file.close();
 }

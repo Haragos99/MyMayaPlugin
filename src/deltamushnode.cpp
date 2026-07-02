@@ -1,4 +1,5 @@
 #include "deltamushnode.h"
+#include "logger.h"
 
 MTypeId DeltaMushNode::id(0x00123456);
 
@@ -9,6 +10,8 @@ MObject DeltaMushNode::aCounter;
 MObject DeltaMushNode::aEnableDebug;
 MObject DeltaMushNode::aStrength;
 MObject DeltaMushNode::deformerMsgAttr;
+MObject DeltaMushNode::aEnableLogging;
+MObject DeltaMushNode::aLogFilePath;
 
 // --- Attribute initialization ---
 MStatus DeltaMushNode::initialize()
@@ -96,12 +99,33 @@ MStatus DeltaMushNode::initialize()
     attributeAffects(aStrength, outputGeom);
 
 
+    aEnableLogging = nAttr.create("enableLogging", "log", MFnNumericData::kBoolean, false);
+    nAttr.setKeyable(true);
+    nAttr.setStorable(true);
+    nAttr.setReadable(true);
+    nAttr.setWritable(true);
+    nAttr.setDefault(false);
 
-
-
-
+    addAttribute(aEnableLogging);
+    attributeAffects(aEnableLogging, outputGeom);
 
     MFnTypedAttribute tAttr;
+
+    aLogFilePath = tAttr.create(
+        "logFilePath",
+        "lfp",
+        MFnData::kString,
+        MObject::kNullObj);
+
+    tAttr.setStorable(true);
+    tAttr.setReadable(true);
+    tAttr.setWritable(true);
+
+    addAttribute(aLogFilePath);
+    attributeAffects(aLogFilePath, outputGeom);
+
+
+    tAttr;
     deformerMsgAttr = tAttr.create("message", "msg", MFnData::kString);
     tAttr.setStorable(false);
     tAttr.setWritable(false);
@@ -178,6 +202,10 @@ MStatus DeltaMushNode::deform(MDataBlock& data,
 	int counter = data.inputValue(aCounter, &status).asInt();
 
 	float strength = data.inputValue(aStrength, &status).asFloat();
+
+    
+
+
     
     MPointArray points;
     if(enableDeltamush)
@@ -189,6 +217,7 @@ MStatus DeltaMushNode::deform(MDataBlock& data,
             itGeo.allPositions(points);
             if (enableFeature)
             {
+
 				m_deltamush->setStrength(strength);
                 if(enableDebug)
                 {
@@ -196,7 +225,12 @@ MStatus DeltaMushNode::deform(MDataBlock& data,
                 }
                 else
                 {
+                    bool enableLogging = data.inputValue(aEnableLogging).asBool();
+                    MString filePath = data.inputValue(aLogFilePath).asString();
+                    Logger::Enable(enableLogging);
+					Logger::Open(filePath.asChar());
                     m_deltamush->improvedDM(points);
+					Logger::Close();
                 }
             }
             else

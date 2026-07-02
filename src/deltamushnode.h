@@ -19,6 +19,8 @@ public:
     static MObject aStrength; 	 //  float slider
     static MObject aEnableDebug;
     static MObject deformerMsgAttr;
+    static MObject aEnableLogging;   // checkbox
+    static MObject aLogFilePath;     // string file path
     static MTypeId id;
 
     MStatus setDependentsDirty(const MPlug& plugBeingDirtied, MPlugArray& affectedPlugs) override;
