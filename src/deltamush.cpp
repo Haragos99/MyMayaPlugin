@@ -3,6 +3,7 @@
 #include <fstream>
 #include "intersectionfilter.h"
 #include <tbb/parallel_for.h>
+#include "logger.h"
 
 DeltaMush::DeltaMush(MDagPath& dagPath) : m_mesh(dagPath)
 {
@@ -205,156 +206,112 @@ void DeltaMush::test(MPointArray points)
 
 void DeltaMush::improvedDM(MPointArray points)
 {
+	Logger::Open("C:\\Users\\Geri\\Documents\\Projects\\CG\\MyMayaPlugin\\ImprovedDM_Log.txt");
 	int frame = static_cast<int>(
 		MAnimControl::currentTime().as(MTime::uiUnit()));
-	std::ofstream log("C:\\Users\\Geri\\Documents\\Projects\\CG\\MyMayaPlugin\\ImprovedDM_Log.txt", std::ios::app);
 
-	if (!log)
-	{
-		MGlobal::displayError("File open failed!");
-	}
+	Logger::Log("==================================================");
+	Logger::Log("Frame", frame);
 
-	log << "Frame: " << frame << "\n";
+	Logger::BeginTimer("Improved Delta Mush");
 
-
-	auto totalStart = std::chrono::high_resolution_clock::now();
 	m_mesh.setVertices(points);
-	MGlobal::displayInfo("Start");
 	CalculateDeformation();
 	m_collisonData.clear();
 
-	auto start = std::chrono::high_resolution_clock::now();
-
-	// Smoothing
-	auto t0 = std::chrono::high_resolution_clock::now();
+	// Smooth mesh
+	Logger::BeginTimer("Smooth Mesh");
 	MeshHandler smooth = smoothMesh(m_mesh, smoothIterion);
-	auto t1 = std::chrono::high_resolution_clock::now();
+	Logger::EndTimer("Smooth Mesh");
 
-	log << "Smooth time: "
-		<< std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
-		<< " ms\n";
-
-
-	// Intersection filtering
-	t0 = std::chrono::high_resolution_clock::now();
+	// Filter intersections
+	Logger::BeginTimer("Intersection Filter");
 
 	IntersectionFilter filter(smooth);
-	filter.filterDefromIntersections(m_mesh.getVertices(), m_mesh, m_filteredIndices);
-
-	t1 = std::chrono::high_resolution_clock::now();
+	filter.filterDefromIntersections(
+		m_mesh.getVertices(),
+		m_mesh,
+		m_filteredIndices);
 
 	m_collisonData.collidedFacesIdx = filter.fIndices;
-	log << "Filter time: "
-		<< std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
-		<< " ms\n";
 
-	log << "Filtered Faces: "
-		<< filter.fIndices.size() << "\n";
+	Logger::EndTimer("Intersection Filter");
 
-	Collison collison = Collison(deltas);
+	Logger::Log("Filtered Faces", filter.fIndices.size());
+
+	Collison collison(deltas);
+
 	filter.initFilteredData(m_mesh);
 	filter.separateFilteredData(collison);
 
-	log << "Intersected Objects: "
-		<< m_collisonData.intersected.size() << "\n";
+	Logger::Log("Intersected Objects",
+		m_collisonData.intersected.size());
 
-	MGlobal::displayInfo(std::to_string(m_collisonData.intersected.size()).c_str());
+	int iteration = 0;
 
-
-	// Collision detection loop
-	int iteration = 1;
 	while (true)
 	{
 		iteration++;
 
-		auto collisionStart = std::chrono::high_resolution_clock::now();
+		Logger::Log("------------------------------");
+		Logger::Log("Iteration", iteration);
+
+		Logger::BeginTimer("Collision Detection");
 
 		bool hasCollision =
-			collison.collisondetecPA(m_mesh, m_smooth, m_collisonData);
+			collison.collisondetecPA(
+				m_mesh,
+				m_smooth,
+				m_collisonData);
 
-		auto collisionEnd = std::chrono::high_resolution_clock::now();
+		Logger::EndTimer("Collision Detection");
 
-		auto collisionTime =
-			std::chrono::duration_cast<std::chrono::milliseconds>(
-				collisionEnd - collisionStart).count();
-
-		log << "\nIteration " << iteration << "\n";
-		log << "Collision detected: "
-			<< (hasCollision ? "YES" : "NO") << "\n";
-		log << "Collision Detection Time: "
-			<< collisionTime << " ms\n";
+		Logger::Log("Collision Detected",
+			hasCollision ? "YES" : "NO");
 
 		if (!hasCollision)
 			break;
 
-		auto deformStart = std::chrono::high_resolution_clock::now();
+		Logger::BeginTimer("CCD Deformation");
 
 		CCDDeformation();
 
-		auto deformEnd = std::chrono::high_resolution_clock::now();
+		Logger::EndTimer("CCD Deformation");
 
-		auto deformTime =
-			std::chrono::duration_cast<std::chrono::milliseconds>(
-				deformEnd - deformStart).count();
-
-		float alpha = collison.getAlfa();
-
-		log << std::fixed << std::setprecision(6);
-		log << "Alpha: " << alpha << "\n";
-		log << "CCD Deformation Time: "
-			<< deformTime << " ms\n";
-
-		log << "Collided Vertices: "
-			<< collison.vertexes.size() << "\n";
-
-		log << "Collided Faces: "
-			<< m_collisonData.collidedFacesIdx.size() << "\n";
+		Logger::Log("Alpha", collison.getAlfa());
+		Logger::Log("Collided Vertices",
+			collison.vertexes.size());
+		Logger::Log("Collided Faces",
+			m_collisonData.collidedFacesIdx.size());
 
 		collison.setAlfa(0);
 	}
 
-	// Final smoothing
-
 	m_collisonData.collidedAllVertecesIdx = collison.vertexes;
 
-	auto smoothStart = std::chrono::high_resolution_clock::now();
+	Logger::BeginTimer("Final Smoothing");
 
 	smoothCollidedVertices(collison.vertexes);
 
-	auto smoothEnd = std::chrono::high_resolution_clock::now();
+	Logger::EndTimer("Final Smoothing");
 
-	log << "\nFinal Smooth Time: "
-		<< std::chrono::duration_cast<std::chrono::milliseconds>(
-			smoothEnd - smoothStart).count()
-		<< " ms\n";
+	double totalTime =
+		Logger::EndTimer("Improved Delta Mush");
 
+	Logger::Log("========== Summary ==========");
+	Logger::Log("Iterations", iteration);
+	Logger::Log("Final Collided Vertices",
+		collison.vertexes.size());
+	Logger::Log("Final Collided Faces",
+		m_collisonData.collidedFacesIdx.size());
+	Logger::Log("Total Execution Time (ms)",
+		totalTime);
 
-	// Total execution
-	auto totalEnd = std::chrono::high_resolution_clock::now();
+	Logger::Flush();
 
-	auto totalTime =
-		std::chrono::duration_cast<std::chrono::milliseconds>(
-			totalEnd - totalStart).count();
-	
-	m_collisonData.collidedAllVertecesIdx = collison.vertexes;
-	MGlobal::displayInfo(MString("Collison ") + collison.vertexes.size() + " count");
-	smoothCollidedVertices(collison.vertexes);
-	auto end = std::chrono::high_resolution_clock::now();
-	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+	MGlobal::displayInfo(
+		MString("Execution time: ") + totalTime + " ms");
 
-
-
-	log << "\n========== Summary ==========\n";
-	log << "Iterations: " << iteration << "\n";
-	log << "Final Collided Vertices: "
-		<< collison.vertexes.size() << "\n";
-	log << "Final Collided Faces: "
-		<< m_collisonData.collidedFacesIdx.size() << "\n";
-	log << "Total Execution Time: "
-		<< totalTime << " ms\n";
-
-	log.close();
-	MGlobal::displayInfo(MString("Execution time: ") + duration + " ms");
 	m_mesh.updateMesh();
 }
 
