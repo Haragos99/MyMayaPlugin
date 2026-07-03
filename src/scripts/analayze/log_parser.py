@@ -36,7 +36,7 @@ class LogParser:
     def __init__(self):
         self.frames = []
 
-    def parse(self, filename):
+    def parse(self, filename) -> list[FrameData]:
 
         current_frame = None
         current_iteration = None
@@ -157,11 +157,6 @@ class LogParser:
         return self.frames
     
 
+    def get_frames(self) -> list[FrameData]:
+        return self.frames
 
-log = LogParser()
-log.parse(r"C:\Users\Geri\Documents\Projects\CG\MyMayaPlugin\resources\ImprovedDM_Log.txt")
-
-frames = log.frames
-
-for frame in frames:
-    print(f"  Total Iterations:     {frame.total_iterations}")
