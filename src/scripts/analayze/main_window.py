@@ -19,8 +19,11 @@ class LogVisualizerWindow(QtWidgets.QDialog):
         self.create_widgets()
         self.create_layout()
         self.create_connections()
+        self.update_ui()
 
         self.chart = ChartPlotter(self.graphLayout)  
+
+        
 
 
     # UI
@@ -29,15 +32,17 @@ class LogVisualizerWindow(QtWidgets.QDialog):
         # File
         self.fileLineEdit = QtWidgets.QLineEdit()
         self.browseButton = QtWidgets.QPushButton("Browse")
-        self.loadButton = QtWidgets.QPushButton("Load Log")
 
         # Frame
         self.frameSpinBox = QtWidgets.QSpinBox()
         self.frameSpinBox.setMinimum(0)
 
+        self.plotTypeCombo = QtWidgets.QComboBox()
+        self.plotTypeCombo.addItems(["Iteration", "Frame"])
+
         # Metric (IMPORTANT: map clean keys)
-        self.metricCombo = QtWidgets.QComboBox()
-        self.metricCombo.addItems([
+        self.iterationMetricCombo = QtWidgets.QComboBox()
+        self.iterationMetricCombo.addItems([
             "alpha",
             "collision_time",
             "ccd_time",
@@ -59,11 +64,18 @@ class LogVisualizerWindow(QtWidgets.QDialog):
         self.chartTypeCombo = QtWidgets.QComboBox()
         self.chartTypeCombo.addItems(["line", "bar"])
 
+        # Labels
+        self.plotTypeLabel = QtWidgets.QLabel("Plot Mode")
+        self.frameLabel = QtWidgets.QLabel("Frame")
+        self.metricLabel = QtWidgets.QLabel("Metric")
+        self.frameMetricLabel = QtWidgets.QLabel("Frame Metric")
+        self.chartTypeLabel = QtWidgets.QLabel("Chart Type")
+
         # Summary
         self.summaryText = QtWidgets.QTextEdit()
         self.summaryText.setReadOnly(True)
 
-        # Graph container (FIXED: no QLabel anymore)
+        # Graph container 
         self.graphFrame = QtWidgets.QFrame()
         self.graphFrame.setFrameShape(QtWidgets.QFrame.Box)
         self.graphLayout = QtWidgets.QVBoxLayout(self.graphFrame)
@@ -71,9 +83,27 @@ class LogVisualizerWindow(QtWidgets.QDialog):
         # Refresh
         self.refreshButton = QtWidgets.QPushButton("Refresh Graph")
 
-        self.framePlotButton = QtWidgets.QPushButton("Plot Frame Data")
 
-   
+
+    def update_ui(self):
+        iteration_mode = self.plotTypeCombo.currentText() == "Iteration"
+
+        # Frame controls
+        self.frameLabel.setVisible(iteration_mode)
+        self.frameSpinBox.setVisible(iteration_mode)
+
+        # Iteration metric controls
+        self.metricLabel.setVisible(iteration_mode)
+        self.iterationMetricCombo.setVisible(iteration_mode)
+
+        # Frame metric controls
+        self.frameMetricLabel.setVisible(not iteration_mode)
+        self.frameMetricCombo.setVisible(not iteration_mode)
+
+        # Refresh graph automatically
+        if self.frames:
+            self.refresh_graph()
+    
     # Layout
     def create_layout(self):
 
@@ -83,26 +113,29 @@ class LogVisualizerWindow(QtWidgets.QDialog):
         fileLayout.addWidget(QtWidgets.QLabel("Log File"))
         fileLayout.addWidget(self.fileLineEdit)
         fileLayout.addWidget(self.browseButton)
-        fileLayout.addWidget(self.loadButton)
 
         optionsLayout = QtWidgets.QHBoxLayout()
-        optionsLayout.addWidget(QtWidgets.QLabel("Frame"))
-        optionsLayout.addWidget(self.frameSpinBox)
+        optionsLayout.addWidget(self.plotTypeLabel)
+        optionsLayout.addWidget(self.plotTypeCombo)
 
         optionsLayout.addSpacing(10)
 
-        optionsLayout.addWidget(QtWidgets.QLabel("Metric"))
-        optionsLayout.addWidget(self.metricCombo)
+        optionsLayout.addWidget(self.metricLabel)
+        optionsLayout.addWidget(self.iterationMetricCombo)
 
         optionsLayout.addSpacing(10)
 
-        optionsLayout.addWidget(QtWidgets.QLabel("Type"))
+        optionsLayout.addWidget(self.frameMetricLabel)
+        optionsLayout.addWidget(self.frameMetricCombo)
+
+        optionsLayout.addSpacing(10)
+
+        optionsLayout.addWidget(self.chartTypeLabel)
         optionsLayout.addWidget(self.chartTypeCombo)
 
-        optionsLayout.addSpacing(20)
-
-        optionsLayout.addWidget(QtWidgets.QLabel("Frame Metric"))
-        optionsLayout.addWidget(self.frameMetricCombo)
+        optionsLayout.addSpacing(10)
+        optionsLayout.addWidget(self.frameLabel)
+        optionsLayout.addWidget(self.frameSpinBox)
 
         optionsLayout.addStretch()
 
@@ -117,19 +150,20 @@ class LogVisualizerWindow(QtWidgets.QDialog):
         mainLayout.addLayout(fileLayout)
         mainLayout.addLayout(optionsLayout)
         mainLayout.addWidget(splitter)
-        buttonLayout = QtWidgets.QHBoxLayout()
-        buttonLayout.addWidget(self.refreshButton)
-        buttonLayout.addWidget(self.framePlotButton)
-
-        mainLayout.addLayout(buttonLayout)
+        mainLayout.addWidget(self.refreshButton)
 
     # Connections
     def create_connections(self):
 
         self.browseButton.clicked.connect(self.browse_file)
-        self.loadButton.clicked.connect(self.load_log)
         self.refreshButton.clicked.connect(self.refresh_graph)
-        self.framePlotButton.clicked.connect(self.plot_frame_data)
+        self.plotTypeCombo.currentIndexChanged.connect(self.update_ui)
+        self.frameSpinBox.valueChanged.connect(self.refresh_graph)
+        self.iterationMetricCombo.currentIndexChanged.connect(self.refresh_graph)
+        self.frameMetricCombo.currentIndexChanged.connect(self.refresh_graph)
+        self.chartTypeCombo.currentIndexChanged.connect(self.refresh_graph)
+        self.plotTypeCombo.currentIndexChanged.connect(self.update_ui)
+
 
 
     # File load
@@ -144,6 +178,8 @@ class LogVisualizerWindow(QtWidgets.QDialog):
 
         if filename:
             self.fileLineEdit.setText(filename)
+
+        self.load_log()
 
     def load_log(self):
 
@@ -167,44 +203,36 @@ class LogVisualizerWindow(QtWidgets.QDialog):
         self.refresh_graph()
 
 
-    def plot_frame_data(self):
-
-        if not self.frames:
-            return
-
-        metric = self.frameMetricCombo.currentText()
-        chart_type = self.chartTypeCombo.currentText()
-
-        self.chart.plot_frame_data(
-            self.frames,
-            key=metric,
-            chart_type=chart_type
-        )
-
     # GRAPH CORE 
     def refresh_graph(self):
 
         if not self.frames:
             return
 
-        frame_index = self.frameSpinBox.value()
-        metric = self.metricCombo.currentText()
         chart_type = self.chartTypeCombo.currentText()
 
-        frame = self.frames[frame_index]
+        if self.plotTypeCombo.currentText() == "Iteration":
 
+            frame_index = self.frameSpinBox.value()
 
-        # Iteration-based metrics
-        if metric in ["alpha", "collision_time", "ccd_time", "vertices", "faces"]:
+            if frame_index >= len(self.frames):
+                return
+
+            frame = self.frames[frame_index]
 
             self.chart.plot_iteration_data(
                 frame,
-                key=metric,
-                chart_type=chart_type
+                self.iterationMetricCombo.currentText(),
+                chart_type
             )
 
         else:
-            print("Unknown metric:", metric)
+
+            self.chart.plot_frame_data(
+                self.frames,
+                self.frameMetricCombo.currentText(),
+                chart_type
+            )
 
     # Maya singleton safe open
     @classmethod
