@@ -1,7 +1,7 @@
 from PySide6 import QtWidgets, QtCore
 from .log_parser import LogParser
 from .charts_plotter import ChartPlotter
-
+from .statistics import StatisticsGenerator
 
 class LogVisualizerWindow(QtWidgets.QDialog):
 
@@ -220,6 +220,10 @@ class LogVisualizerWindow(QtWidgets.QDialog):
 
             frame = self.frames[frame_index]
 
+            self.summaryText.setPlainText(
+                StatisticsGenerator.frame_summary(frame)
+            )
+
             self.chart.plot_iteration_data(
                 frame,
                 self.iterationMetricCombo.currentText(),
@@ -227,6 +231,10 @@ class LogVisualizerWindow(QtWidgets.QDialog):
             )
 
         else:
+
+            self.summaryText.setPlainText(
+                StatisticsGenerator.overall_summary(self.frames)
+            )
 
             self.chart.plot_frame_data(
                 self.frames,
