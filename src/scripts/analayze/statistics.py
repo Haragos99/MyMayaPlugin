@@ -48,7 +48,8 @@ class StatisticsGenerator:
         text = []
 
         text.append(f"====== FRAME {frame.frame} ======")
-        text.append(f"Smooth Time      : {frame.final_smooth_time} ms")
+        text.append(f"Delta Mush Deformation      : {frame.smooth_time} ms")
+        text.append(f"Final Smooth Time      : {frame.final_smooth_time} ms")
         text.append(f"Filter Time      : {frame.filter_time} ms")
         text.append(f"Total Time       : {frame.total_execution_time} ms")
         text.append(f"Iterations       : {frame.total_iterations}")
@@ -76,8 +77,10 @@ class StatisticsGenerator:
 
             if collision_times:
                 text.append(f"Avg Collision Time: {sum(collision_times)/len(collision_times):.2f} ms")
+                text.append(f"All Collision Time: {sum(collision_times):.2f} ms")
 
             if ccd_times:
-                text.append(f"Avg CCD Time      : {sum(ccd_times)/len(ccd_times):.2f} ms")
+                text.append(f"Avg CCD Def Time      : {sum(ccd_times)/len(ccd_times):.2f} ms")
+                text.append(f"All CCD Def Time      : {sum(ccd_times):.2f} ms")
 
         return "\n".join(text)
