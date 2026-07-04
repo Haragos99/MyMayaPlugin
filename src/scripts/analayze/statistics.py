@@ -14,7 +14,7 @@ class StatisticsGenerator:
         total_frames = len(frames)
 
         total_time = [f.total_execution_time for f in frames]
-        smooth_time = [f.smooth_time for f in frames]
+        smooth_time = [f.final_smooth_time for f in frames]
         filter_time = [f.filter_time for f in frames]
         iterations = [f.total_iterations for f in frames]
         filtered_faces = [f.filtered_faces for f in frames]
@@ -48,7 +48,7 @@ class StatisticsGenerator:
         text = []
 
         text.append(f"====== FRAME {frame.frame} ======")
-        text.append(f"Smooth Time      : {frame.smooth_time} ms")
+        text.append(f"Smooth Time      : {frame.final_smooth_time} ms")
         text.append(f"Filter Time      : {frame.filter_time} ms")
         text.append(f"Total Time       : {frame.total_execution_time} ms")
         text.append(f"Iterations       : {frame.total_iterations}")

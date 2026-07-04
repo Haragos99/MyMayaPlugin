@@ -38,9 +38,11 @@ class LogParser:
 
     def parse(self, filename) -> list[FrameData]:
 
+        self.frames.clear()
+
         current_frame = None
         current_iteration = None
-
+        frame_count = 0
         with open(filename, "r") as file:
 
             for line in file:
@@ -50,108 +52,158 @@ class LogParser:
                 if not line:
                     continue
 
+                # Skip separators
+                if line.startswith("=") or line.startswith("-"):
+                    continue
+
+                # ----------------------------------------------------------
                 # Frame
+                # ----------------------------------------------------------
                 frame = re.match(r"Frame:\s*(\d+)", line)
                 if frame:
 
                     current_frame = FrameData()
-                    current_frame.frame = int(frame.group(1))
-
+                    current_frame.frame = int(frame_count)
+                    frame_count += 1
                     self.frames.append(current_frame)
+
+                    current_iteration = None
                     continue
 
                 if current_frame is None:
                     continue
 
+                # ----------------------------------------------------------
                 # Frame statistics
-                frame_statistics = re.match(r"Smooth time:\s*(\d+)", line)
-                if frame_statistics:
-                    current_frame.smooth_time = int(frame_statistics.group(1))
+                # ----------------------------------------------------------
+
+                smooth = re.match(
+                    r"Smooth Mesh Time \(ms\):\s*([\d.]+)", line)
+                if smooth:
+                    current_frame.smooth_time = float(smooth.group(1))
                     continue
 
-                filter_tieme = re.match(r"Filter time:\s*(\d+)", line)
-                if filter_tieme:
-                    current_frame.filter_time = int(filter_tieme.group(1))
+                filter_time = re.match(
+                    r"Intersection Filter Time \(ms\):\s*([\d.]+)", line)
+                if filter_time:
+                    current_frame.filter_time = float(filter_time.group(1))
                     continue
 
-                filtered_faces = re.match(r"Filtered Faces:\s*(\d+)", line)
+                filtered_faces = re.match(
+                    r"Filtered Faces:\s*(\d+)", line)
                 if filtered_faces:
                     current_frame.filtered_faces = int(filtered_faces.group(1))
                     continue
 
-                intersected = re.match(r"Intersected Objects:\s*(\d+)", line)
+                intersected = re.match(
+                    r"Intersected Objects:\s*(\d+)", line)
                 if intersected:
                     current_frame.intersected_objects = int(intersected.group(1))
                     continue
 
+                # ----------------------------------------------------------
                 # Iteration
-                iter = re.match(r"Iteration\s*(\d+)", line)
-                if iter:
+                # ----------------------------------------------------------
+
+                iteration = re.match(
+                    r"Iteration:\s*(\d+)", line)
+                if iteration:
 
                     current_iteration = IterationData()
-                    current_iteration.iteration = int(iter.group(1))
+                    current_iteration.iteration = int(iteration.group(1))
 
                     current_frame.iterations.append(current_iteration)
-
                     continue
 
-                if current_iteration:
+                # ----------------------------------------------------------
+                # Iteration statistics
+                # ----------------------------------------------------------
 
-                    iscollided = re.match(r"Collision detected:\s*(YES|NO)", line)
-                    if iscollided:
-                        current_iteration.collision = (iscollided.group(1) == "YES")
+                if current_iteration is not None:
+
+                    collision_time = re.match(
+                        r"Collision Detection Time \(ms\):\s*([\d.]+)", line)
+                    if collision_time:
+                        current_iteration.collision_time = float(
+                            collision_time.group(1))
                         continue
 
-                    CD_time = re.match(r"Collision Detection Time:\s*(\d+)", line)
-                    if CD_time:
-                        current_iteration.collision_time = int(CD_time.group(1))
+                    collision = re.match(
+                        r"Collision Detected:\s*(YES|NO)", line)
+                    if collision:
+                        current_iteration.collision = (
+                            collision.group(1) == "YES")
                         continue
 
-                    CCD_time = re.match(r"CCD Deformation Time:\s*(\d+)", line)
-                    if CCD_time:
-                        current_iteration.ccd_time = int(CCD_time.group(1))
+                    ccd_time = re.match(
+                        r"CCD Deformation Time \(ms\):\s*([\d.]+)", line)
+                    if ccd_time:
+                        current_iteration.ccd_time = float(
+                            ccd_time.group(1))
                         continue
 
-                    alpha = re.match(r"Alpha:\s*([0-9.]+)", line)
+                    alpha = re.match(
+                        r"Alpha:\s*([\d.]+)", line)
                     if alpha:
                         current_iteration.alpha = float(alpha.group(1))
                         continue
 
-                    collided_vertices = re.match(r"Collided Vertices:\s*(\d+)", line)
-                    if collided_vertices:
-                        current_iteration.vertices = int(collided_vertices.group(1))
+                    vertices = re.match(
+                        r"Collided Vertices:\s*(\d+)", line)
+                    if vertices:
+                        current_iteration.vertices = int(vertices.group(1))
                         continue
 
-                    collided_faces = re.match(r"Collided Faces:\s*(\d+)", line)
-                    if collided_faces:
-                        current_iteration.faces = int(collided_faces.group(1))
+                    faces = re.match(
+                        r"Collided Faces:\s*(\d+)", line)
+                    if faces:
+                        current_iteration.faces = int(faces.group(1))
                         continue
 
-
+                # ----------------------------------------------------------
                 # Summary
-                all_iter = re.match(r"Iterations:\s*(\d+)", line)
-                if all_iter:
-                    current_frame.total_iterations = int(all_iter.group(1))
+                # ----------------------------------------------------------
+
+                final_smooth = re.match(
+                    r"Final Smoothing Time \(ms\):\s*([\d.]+)", line)
+                if final_smooth:
+                    current_frame.final_smooth_time = float(
+                        final_smooth.group(1))
                     continue
 
-                all_collided_vertices = re.match(r"Final Collided Vertices:\s*(\d+)", line)
-                if all_collided_vertices:
-                    current_frame.final_vertices = int(all_collided_vertices.group(1))
+                improved_dm = re.match(
+                    r"Improved Delta Mush Time \(ms\):\s*([\d.]+)", line)
+                if improved_dm:
+                    current_frame.improved_dm_time = float(
+                        improved_dm.group(1))
                     continue
 
-                all_collided_faces = re.match(r"Final Collided Faces:\s*(\d+)", line)
-                if all_collided_faces:
-                    current_frame.final_faces = int(all_collided_faces.group(1))
+                total_iterations = re.match(
+                    r"Iterations:\s*(\d+)", line)
+                if total_iterations:
+                    current_frame.total_iterations = int(
+                        total_iterations.group(1))
                     continue
 
-                smooth_time = re.match(r"Final Smooth Time:\s*(\d+)", line)
-                if smooth_time:
-                    current_frame.final_smooth_time = int(smooth_time.group(1))
+                final_vertices = re.match(
+                    r"Final Collided Vertices:\s*(\d+)", line)
+                if final_vertices:
+                    current_frame.final_vertices = int(
+                        final_vertices.group(1))
                     continue
 
-                total_time = re.match(r"Total Execution Time:\s*(\d+)", line)
+                final_faces = re.match(
+                    r"Final Collided Faces:\s*(\d+)", line)
+                if final_faces:
+                    current_frame.final_faces = int(
+                        final_faces.group(1))
+                    continue
+
+                total_time = re.match(
+                    r"Total Execution Time \(ms\):\s*([\d.]+)", line)
                 if total_time:
-                    current_frame.total_execution_time = int(total_time.group(1))
+                    current_frame.total_execution_time = float(
+                        total_time.group(1))
                     continue
 
         return self.frames
@@ -159,4 +211,5 @@ class LogParser:
 
     def get_frames(self) -> list[FrameData]:
         return self.frames
+
 

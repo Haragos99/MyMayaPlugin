@@ -123,7 +123,7 @@ class ChartPlotter:
             x.append(f.frame)
 
             if key == "smooth_time":
-                y.append(f.smooth_time)
+                y.append(f.final_smooth_time)
 
             elif key == "filter_time":
                 y.append(f.filter_time)
