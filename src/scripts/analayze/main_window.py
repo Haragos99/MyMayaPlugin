@@ -45,6 +45,16 @@ class LogVisualizerWindow(QtWidgets.QDialog):
             "faces"
         ])
 
+        self.frameMetricCombo = QtWidgets.QComboBox()
+
+        self.frameMetricCombo.addItems([
+            "smooth_time",
+            "filter_time",
+            "total_time",
+            "iterations",
+            "filtered_faces"
+        ])
+
         # Chart type (NEW)
         self.chartTypeCombo = QtWidgets.QComboBox()
         self.chartTypeCombo.addItems(["line", "bar"])
@@ -60,6 +70,8 @@ class LogVisualizerWindow(QtWidgets.QDialog):
 
         # Refresh
         self.refreshButton = QtWidgets.QPushButton("Refresh Graph")
+
+        self.framePlotButton = QtWidgets.QPushButton("Plot Frame Data")
 
    
     # Layout
@@ -87,6 +99,11 @@ class LogVisualizerWindow(QtWidgets.QDialog):
         optionsLayout.addWidget(QtWidgets.QLabel("Type"))
         optionsLayout.addWidget(self.chartTypeCombo)
 
+        optionsLayout.addSpacing(20)
+
+        optionsLayout.addWidget(QtWidgets.QLabel("Frame Metric"))
+        optionsLayout.addWidget(self.frameMetricCombo)
+
         optionsLayout.addStretch()
 
         splitter = QtWidgets.QSplitter()
@@ -100,8 +117,11 @@ class LogVisualizerWindow(QtWidgets.QDialog):
         mainLayout.addLayout(fileLayout)
         mainLayout.addLayout(optionsLayout)
         mainLayout.addWidget(splitter)
-        mainLayout.addWidget(self.refreshButton)
+        buttonLayout = QtWidgets.QHBoxLayout()
+        buttonLayout.addWidget(self.refreshButton)
+        buttonLayout.addWidget(self.framePlotButton)
 
+        mainLayout.addLayout(buttonLayout)
 
     # Connections
     def create_connections(self):
@@ -109,6 +129,7 @@ class LogVisualizerWindow(QtWidgets.QDialog):
         self.browseButton.clicked.connect(self.browse_file)
         self.loadButton.clicked.connect(self.load_log)
         self.refreshButton.clicked.connect(self.refresh_graph)
+        self.framePlotButton.clicked.connect(self.plot_frame_data)
 
 
     # File load
@@ -145,6 +166,20 @@ class LogVisualizerWindow(QtWidgets.QDialog):
         # auto draw first frame
         self.refresh_graph()
 
+
+    def plot_frame_data(self):
+
+        if not self.frames:
+            return
+
+        metric = self.frameMetricCombo.currentText()
+        chart_type = self.chartTypeCombo.currentText()
+
+        self.chart.plot_frame_data(
+            self.frames,
+            key=metric,
+            chart_type=chart_type
+        )
 
     # GRAPH CORE 
     def refresh_graph(self):
