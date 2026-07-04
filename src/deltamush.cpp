@@ -206,7 +206,6 @@ void DeltaMush::test(MPointArray points)
 
 void DeltaMush::improvedDM(MPointArray points)
 {
-	IMDLogger::Open("C:\\Users\\Geri\\Documents\\Projects\\CG\\MyMayaPlugin\\ImprovedDM_Log.txt");
 	int frame = static_cast<int>(
 		MAnimControl::currentTime().as(MTime::uiUnit()));
 
@@ -214,20 +213,19 @@ void DeltaMush::improvedDM(MPointArray points)
 	IMDLogger::Log("Frame", frame);
 
 	IMDLogger::BeginTimer("Improved Delta Mush");
-
-	m_mesh.setVertices(points);
-	CalculateDeformation();
 	m_collisonData.clear();
+	m_mesh.setVertices(points);
+	
 
 	// Smooth mesh
 	IMDLogger::BeginTimer("Smooth Mesh");
-	MeshHandler smooth = smoothMesh(m_mesh, smoothIterion);
+	CalculateDeformation();
 	IMDLogger::EndTimer("Smooth Mesh");
 
 	// Filter intersections
 	IMDLogger::BeginTimer("Intersection Filter");
 
-	IntersectionFilter filter(smooth);
+	IntersectionFilter filter(m_smooth);
 	filter.filterDefromIntersections(
 		m_mesh.getVertices(),
 		m_mesh,
@@ -249,6 +247,7 @@ void DeltaMush::improvedDM(MPointArray points)
 
 	int iteration = 0;
 
+	
 	while (true)
 	{
 		iteration++;
@@ -282,7 +281,7 @@ void DeltaMush::improvedDM(MPointArray points)
 		IMDLogger::Log("Collided Vertices",
 			collison.vertexes.size());
 		IMDLogger::Log("Collided Faces",
-			m_collisonData.collidedFacesIdx.size());
+			collison.facesIDX.size());
 
 		collison.setAlfa(0);
 	}

@@ -228,7 +228,12 @@ MStatus DeltaMushNode::deform(MDataBlock& data,
                     bool enableLogging = data.inputValue(aEnableLogging).asBool();
                     MString filePath = data.inputValue(aLogFilePath).asString();
                     IMDLogger::Enable(enableLogging);
-					IMDLogger::Open(filePath.asChar());
+					bool isOpen = IMDLogger::Open(filePath.asChar());
+                    if(IMDLogger::IsEnabled() && !isOpen)
+                    {
+                        MGlobal::displayError("Failed to open log file: " + filePath);
+					}
+                    MGlobal::displayInfo("Open log file: " + filePath);
                     m_deltamush->improvedDM(points);
 					IMDLogger::Close();
                 }
