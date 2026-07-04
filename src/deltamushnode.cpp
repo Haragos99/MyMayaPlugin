@@ -203,10 +203,6 @@ MStatus DeltaMushNode::deform(MDataBlock& data,
 
 	float strength = data.inputValue(aStrength, &status).asFloat();
 
-    
-
-
-    
     MPointArray points;
     if(enableDeltamush)
     {
@@ -233,7 +229,6 @@ MStatus DeltaMushNode::deform(MDataBlock& data,
                     {
                         MGlobal::displayError("Failed to open log file: " + filePath);
 					}
-                    MGlobal::displayInfo("Open log file: " + filePath);
                     m_deltamush->improvedDM(points);
 					IMDLogger::Close();
                 }

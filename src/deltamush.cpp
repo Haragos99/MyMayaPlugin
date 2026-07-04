@@ -217,7 +217,7 @@ void DeltaMush::improvedDM(MPointArray points)
 	m_mesh.setVertices(points);
 	
 
-	// Smooth mesh
+	//  Caluclate Deformtion  Smooth mesh
 	IMDLogger::BeginTimer("Smooth Mesh");
 	CalculateDeformation();
 	IMDLogger::EndTimer("Smooth Mesh");
@@ -269,7 +269,9 @@ void DeltaMush::improvedDM(MPointArray points)
 			hasCollision ? "YES" : "NO");
 
 		if (!hasCollision)
+		{
 			break;
+		}
 
 		IMDLogger::BeginTimer("CCD Deformation");
 
