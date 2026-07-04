@@ -2,6 +2,7 @@ from PySide6 import QtWidgets, QtCore
 from .log_parser import LogParser
 from .charts_plotter import ChartPlotter
 from .statistics import StatisticsGenerator
+import maya.cmds as cmds
 
 class LogVisualizerWindow(QtWidgets.QDialog):
 
@@ -85,6 +86,10 @@ class LogVisualizerWindow(QtWidgets.QDialog):
 
 
 
+    def on_frame_changed(self, value):
+        import maya.cmds as cmds
+        cmds.currentTime(value, e=True, u=True)
+
     def update_ui(self):
         iteration_mode = self.plotTypeCombo.currentText() == "Iteration"
 
@@ -163,6 +168,7 @@ class LogVisualizerWindow(QtWidgets.QDialog):
         self.frameMetricCombo.currentIndexChanged.connect(self.refresh_graph)
         self.chartTypeCombo.currentIndexChanged.connect(self.refresh_graph)
         self.plotTypeCombo.currentIndexChanged.connect(self.update_ui)
+        self.frameSpinBox.valueChanged.connect(self.on_frame_changed)
 
 
 
