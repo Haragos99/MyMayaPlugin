@@ -25,6 +25,18 @@ struct CollisonData {
 	}	
 };
 
+
+enum class CCDType { VF, EE };
+
+struct TOIRec {
+	float toi;
+	CCDType type;
+	int v{ -1 }, f{ -1 };
+	int e1{ -1 }, e2{ -1 };
+};
+
+
+
 struct Delta {
 
 public:
@@ -50,7 +62,7 @@ public:
 	void init(std::vector<MPoint> v);
 
 	bool collisondetec(MeshHandler& mesh, MeshHandler& smooth,CollisonData& data);
-
+	bool collisondetecPA(MeshHandler& mesh, MeshHandler& smooth, CollisonData& data);
 	float getAlfa() { return alfa; }
 	void setAlfa(float newalfa) { alfa = newalfa; }
 	std::set<int> vertexesIDX;

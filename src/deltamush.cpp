@@ -1,7 +1,9 @@
 #include "deltamush.h"
 #include <chrono>
+#include <fstream>
 #include "intersectionfilter.h"
 #include <tbb/parallel_for.h>
+#include "logger.h"
 
 DeltaMush::DeltaMush(MDagPath& dagPath) : m_mesh(dagPath)
 {
@@ -204,35 +206,113 @@ void DeltaMush::test(MPointArray points)
 
 void DeltaMush::improvedDM(MPointArray points)
 {
-	m_mesh.setVertices(points);
-	MGlobal::displayInfo("Start");
-	CalculateDeformation();
-	m_collisonData.clear();
+	int frame = static_cast<int>(
+		MAnimControl::currentTime().as(MTime::uiUnit()));
 
-	auto start = std::chrono::high_resolution_clock::now();
-	MeshHandler smooth = smoothMesh(m_mesh, smoothIterion);
-	IntersectionFilter filter(smooth);
-	filter.filterDefromIntersections(m_mesh.getVertices(), m_mesh, m_filteredIndices);
+	IMDLogger::Log("==================================================");
+	IMDLogger::Log("Frame", frame);
+
+	IMDLogger::BeginTimer("Improved Delta Mush");
+	m_collisonData.clear();
+	m_mesh.setVertices(points);
+	
+
+	//  Caluclate Deformtion  Smooth mesh
+	IMDLogger::BeginTimer("Smooth Mesh");
+	CalculateDeformation();
+	IMDLogger::EndTimer("Smooth Mesh");
+
+	// Filter intersections
+	IMDLogger::BeginTimer("Intersection Filter");
+
+	IntersectionFilter filter(m_smooth);
+	filter.filterDefromIntersections(
+		m_mesh.getVertices(),
+		m_mesh,
+		m_filteredIndices);
+
 	m_collisonData.collidedFacesIdx = filter.fIndices;
-	Collison collison = Collison(deltas);
+
+	IMDLogger::EndTimer("Intersection Filter");
+
+	IMDLogger::Log("Filtered Faces", filter.fIndices.size());
+
+	Collison collison(deltas);
+
 	filter.initFilteredData(m_mesh);
 	filter.separateFilteredData(collison);
+
+	IMDLogger::Log("Intersected Objects",
+		m_collisonData.intersected.size());
+
+	int iteration = 0;
+
 	
-	MGlobal::displayInfo(std::to_string(m_collisonData.intersected.size()).c_str());
-	while(collison.collisondetec(m_mesh, m_smooth, m_collisonData))
+	while (true)
 	{
+		iteration++;
+
+		IMDLogger::Log("------------------------------");
+		IMDLogger::Log("Iteration", iteration);
+
+		IMDLogger::BeginTimer("Collision Detection");
+
+		bool hasCollision =
+			collison.collisondetecPA(
+				m_mesh,
+				m_smooth,
+				m_collisonData);
+
+		IMDLogger::EndTimer("Collision Detection");
+
+		IMDLogger::Log("Collision Detected",
+			hasCollision ? "YES" : "NO");
+
+		if (!hasCollision)
+		{
+			break;
+		}
+
+		IMDLogger::BeginTimer("CCD Deformation");
+
 		CCDDeformation();
-		float alfa = collison.getAlfa();
-		int percent = alfa * 100;
+
+		IMDLogger::EndTimer("CCD Deformation");
+
+		IMDLogger::Log("Alpha", collison.getAlfa());
+		IMDLogger::Log("Collided Vertices",
+			collison.vertexes.size());
+		IMDLogger::Log("Collided Faces",
+			collison.facesIDX.size());
+
 		collison.setAlfa(0);
 	}
-	
-	m_collisonData.collidedAllVertecesIdx = collison.vertexes;
-	smoothCollidedVertices(collison.vertexes);
-	auto end = std::chrono::high_resolution_clock::now();
-	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
-	MGlobal::displayInfo(MString("Execution time: ") + duration + " ms");
+	m_collisonData.collidedAllVertecesIdx = collison.vertexes;
+
+	IMDLogger::BeginTimer("Final Smoothing");
+
+	smoothCollidedVertices(collison.vertexes);
+
+	IMDLogger::EndTimer("Final Smoothing");
+
+	double totalTime =
+		IMDLogger::EndTimer("Improved Delta Mush");
+
+	IMDLogger::Log("========== Summary ==========");
+	IMDLogger::Log("Iterations", iteration);
+	IMDLogger::Log("Final Collided Vertices",
+		collison.vertexes.size());
+	IMDLogger::Log("Final Collided Faces",
+		m_collisonData.collidedFacesIdx.size());
+	IMDLogger::Log("Total Execution Time (ms)",
+		totalTime);
+
+	IMDLogger::Flush();
+
+	MGlobal::displayInfo(
+		MString("Execution time: ") + totalTime + " ms");
+
 	m_mesh.updateMesh();
 }
 
