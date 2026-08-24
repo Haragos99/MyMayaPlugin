@@ -2,6 +2,8 @@ from PySide6 import QtWidgets, QtCore
 from .log_parser import LogParser
 from .charts_plotter import ChartPlotter
 from .statistics import StatisticsGenerator
+from datetime import datetime
+import os
 import maya.cmds as cmds
 
 class LogVisualizerWindow(QtWidgets.QDialog):
@@ -84,6 +86,11 @@ class LogVisualizerWindow(QtWidgets.QDialog):
         # Refresh
         self.refreshButton = QtWidgets.QPushButton("Refresh Graph")
 
+        self.exportButton = QtWidgets.QPushButton("Export All Data")
+        self.exportButton.setToolTip(
+        "Export all statistics and all generated plot images to a selected folder"
+        )
+
 
 
     def on_frame_changed(self, value):
@@ -152,10 +159,15 @@ class LogVisualizerWindow(QtWidgets.QDialog):
 
         splitter.setSizes([250, 700])
 
+        # Buttons
+        buttonLayout = QtWidgets.QHBoxLayout()
+        buttonLayout.addWidget(self.refreshButton)
+        buttonLayout.addWidget(self.exportButton)
+
         mainLayout.addLayout(fileLayout)
         mainLayout.addLayout(optionsLayout)
         mainLayout.addWidget(splitter)
-        mainLayout.addWidget(self.refreshButton)
+        mainLayout.addLayout(buttonLayout)
 
     # Connections
     def create_connections(self):
@@ -169,6 +181,7 @@ class LogVisualizerWindow(QtWidgets.QDialog):
         self.chartTypeCombo.currentIndexChanged.connect(self.refresh_graph)
         self.plotTypeCombo.currentIndexChanged.connect(self.update_ui)
         self.frameSpinBox.valueChanged.connect(self.on_frame_changed)
+        self.exportButton.clicked.connect(self.export_all_data)
 
 
 
@@ -207,6 +220,307 @@ class LogVisualizerWindow(QtWidgets.QDialog):
 
         # auto draw first frame
         self.refresh_graph()
+
+
+    def export_all_data(self):
+
+        if not self.frames:
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Export",
+                "There is no loaded log data to export."
+            )
+            return
+
+        # Ask user for destination folder
+        export_dir = QtWidgets.QFileDialog.getExistingDirectory(
+            self,
+            "Choose Export Folder",
+            ""
+        )
+
+        if not export_dir:
+            return
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        export_folder = os.path.join(
+            export_dir,
+            f"DeltaMush_Export_{timestamp}"
+        )
+
+        os.makedirs(export_folder, exist_ok=True)
+
+        plots_folder = os.path.join(export_folder, "plots")
+        os.makedirs(plots_folder, exist_ok=True)
+
+        try:
+            # ---------------------------------------------------------
+            # 1. Export complete raw statistics
+            # ---------------------------------------------------------
+
+            statistics_file = os.path.join(
+                export_folder,
+                "statistics.txt"
+            )
+
+            with open(statistics_file, "w", encoding="utf-8") as file:
+
+                file.write("IMPROVED DELTA MUSH - COMPLETE DATA EXPORT\n")
+                file.write("=" * 70 + "\n\n")
+
+                file.write(f"Frames: {len(self.frames)}\n\n")
+
+                # Overall statistics
+                file.write("OVERALL SUMMARY\n")
+                file.write("-" * 70 + "\n")
+                file.write(
+                    StatisticsGenerator.overall_summary(self.frames)
+                )
+                file.write("\n\n")
+
+                # Every frame
+                for frame_index, frame in enumerate(self.frames):
+
+                    file.write("\n")
+                    file.write("=" * 70 + "\n")
+                    file.write(f"FRAME {frame_index}\n")
+                    file.write("=" * 70 + "\n\n")
+
+                    file.write(
+                        StatisticsGenerator.frame_summary(frame)
+                    )
+                    file.write("\n")
+
+                    file.write("FRAME DATA\n")
+                    file.write("-" * 70 + "\n")
+
+                    file.write(f"Frame: {frame.frame}\n")
+                    file.write(f"Smooth Time: {frame.smooth_time}\n")
+                    file.write(f"Filter Time: {frame.filter_time}\n")
+                    file.write(f"Filtered Faces: {frame.filtered_faces}\n")
+                    file.write(
+                        f"Intersected Objects: "
+                        f"{frame.intersected_objects}\n"
+                    )
+                    file.write(
+                        f"Final Smooth Time: "
+                        f"{frame.final_smooth_time}\n"
+                    )
+                    file.write(
+                        f"Improved Delta Mush Time: "
+                        f"{getattr(frame, 'improved_dm_time', 0)}\n"
+                    )
+                    file.write(
+                        f"Total Execution Time: "
+                        f"{frame.total_execution_time}\n"
+                    )
+                    file.write(
+                        f"Total Iterations: "
+                        f"{frame.total_iterations}\n"
+                    )
+                    file.write(
+                        f"Final Vertices: "
+                        f"{frame.final_vertices}\n"
+                    )
+                    file.write(
+                        f"Final Faces: "
+                        f"{frame.final_faces}\n"
+                    )
+
+                    # Every iteration
+                    file.write("\nITERATIONS\n")
+                    file.write("-" * 70 + "\n")
+
+                    for iteration in frame.iterations:
+
+                        file.write(
+                            f"Iteration: {iteration.iteration}\n"
+                        )
+                        file.write(
+                            f"Collision: "
+                            f"{iteration.collision}\n"
+                        )
+                        file.write(
+                            f"Collision Time: "
+                            f"{iteration.collision_time}\n"
+                        )
+                        file.write(
+                            f"CCD Time: "
+                            f"{iteration.ccd_time}\n"
+                        )
+                        file.write(
+                            f"Alpha: {iteration.alpha}\n"
+                        )
+                        file.write(
+                            f"Vertices: {iteration.vertices}\n"
+                        )
+                        file.write(
+                            f"Faces: {iteration.faces}\n"
+                        )
+                        file.write("\n")
+
+            # ---------------------------------------------------------
+            # 2. Export every iteration metric as plots
+            # ---------------------------------------------------------
+
+            iteration_metrics = [
+                "alpha",
+                "collision_time",
+                "ccd_time",
+                "vertices",
+                "faces"
+            ]
+
+            chart_types = [
+                "line",
+                "bar"
+            ]
+
+            for frame_index, frame in enumerate(self.frames):
+
+                for metric in iteration_metrics:
+
+                    for chart_type in chart_types:
+
+                        # Draw the requested chart
+                        self.chart.plot_iteration_data(
+                            frame,
+                            metric,
+                            chart_type
+                        )
+
+                        filename = (
+                            f"frame_{frame_index:04d}_"
+                            f"iteration_{metric}_{chart_type}.png"
+                        )
+
+                        filepath = os.path.join(
+                            plots_folder,
+                            filename
+                        )
+
+                        self.chart.figure.savefig(
+                            filepath,
+                            dpi=150,
+                            bbox_inches="tight"
+                        )
+
+            # ---------------------------------------------------------
+            # 3. Export every frame metric as plots
+            # ---------------------------------------------------------
+
+            frame_metrics = [
+                "smooth_time",
+                "filter_time",
+                "total_time",
+                "iterations",
+                "filtered_faces"
+            ]
+
+            for metric in frame_metrics:
+
+                for chart_type in chart_types:
+
+                    self.chart.plot_frame_data(
+                        self.frames,
+                        metric,
+                        chart_type
+                    )
+
+                    filename = (
+                        f"all_frames_{metric}_{chart_type}.png"
+                    )
+
+                    filepath = os.path.join(
+                        plots_folder,
+                        filename
+                    )
+
+                    self.chart.figure.savefig(
+                        filepath,
+                        dpi=150,
+                        bbox_inches="tight"
+                    )
+
+            # ---------------------------------------------------------
+            # 4. Export the currently displayed summary
+            # ---------------------------------------------------------
+
+            summary_file = os.path.join(
+                export_folder,
+                "current_summary.txt"
+            )
+
+            with open(
+                summary_file,
+                "w",
+                encoding="utf-8"
+            ) as file:
+
+                file.write(
+                    self.summaryText.toPlainText()
+                )
+
+            # ---------------------------------------------------------
+            # 5. Export information about the current visualization
+            # ---------------------------------------------------------
+
+            settings_file = os.path.join(
+                export_folder,
+                "export_settings.txt"
+            )
+
+            with open(
+                settings_file,
+                "w",
+                encoding="utf-8"
+            ) as file:
+
+                file.write("VISUALIZATION SETTINGS\n")
+                file.write("=" * 50 + "\n")
+                file.write(
+                    f"Plot Mode: "
+                    f"{self.plotTypeCombo.currentText()}\n"
+                )
+                file.write(
+                    f"Iteration Metric: "
+                    f"{self.iterationMetricCombo.currentText()}\n"
+                )
+                file.write(
+                    f"Frame Metric: "
+                    f"{self.frameMetricCombo.currentText()}\n"
+                )
+                file.write(
+                    f"Chart Type: "
+                    f"{self.chartTypeCombo.currentText()}\n"
+                )
+                file.write(
+                    f"Selected Frame: "
+                    f"{self.frameSpinBox.value()}\n"
+                )
+                file.write(
+                    f"Total Frames: "
+                    f"{len(self.frames)}\n"
+                )
+
+            # ---------------------------------------------------------
+            # Finished
+            # ---------------------------------------------------------
+
+            QtWidgets.QMessageBox.information(
+                self,
+                "Export Complete",
+                "All data and plot images were exported successfully.\n\n"
+                f"Location:\n{export_folder}"
+            )
+
+        except Exception as error:
+
+            QtWidgets.QMessageBox.critical(
+                self,
+                "Export Error",
+                f"Failed to export data:\n\n{error}"
+            )
 
 
     # GRAPH CORE 
